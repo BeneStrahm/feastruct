@@ -50,8 +50,8 @@ class FrameElement2D(FrameElement):
 
         coords = self.get_node_coords()
 
-        ax.plot(coords[:, 0], coords[:, 1], 'k.', linestyle=linestyle,
-                linewidth=linewidth, marker=marker, markersize=8)
+        ax.plot(coords[:, 0], coords[:, 1], color='k', linestyle=linestyle,
+                linewidth=linewidth, marker=marker, markersize=8, markeredgecolor='grey', markerfacecolor='grey')
 
     def plot_deformed_element(self, ax, analysis_case, n, def_scale, u_el=None):
         """Plots a 2D frame element in its deformed configuration for the displacement vector
@@ -130,7 +130,7 @@ class FrameElement2D(FrameElement):
         ax.plot(x[0], y[0], 'k.', markersize=8)
         ax.plot(x[-1], y[-1], 'k.', markersize=8)
 
-    def plot_axial_force(self, ax, analysis_case, scalef, n):
+    def plot_axial_force(self, ax, analysis_case, scalef, n, text_values=False):
         """Plots the axial force diagram from a static analysis defined by case_id. N.B. this
         method is adapted from the MATLAB code by F.P. van der Meer: plotNLine.m.
 
@@ -140,6 +140,7 @@ class FrameElement2D(FrameElement):
         :type analysis_case: :class:`~feastruct.fea.cases.AnalysisCase`
         :param float scalef: Factor by which to scale the axial force diagram
         :param int n: Number of points at which to plot the axial force diagram
+        :param bool text_values:  Whether or not the values of the internal forces are displayed 
         """
 
         # get geometric properties
@@ -166,46 +167,60 @@ class FrameElement2D(FrameElement):
             p2 = end1 + xis[i+1] * (end2 - end1)
 
             # location of the axial force diagram end points
-            v = np.matmul(np.array([[0, -1], [1, 0]]), dx[0:2]) / l0  # direction vector
+            v = np.matmul(np.array([[0, -1], [1, 0]]),
+                          dx[0:2]) / l0  # direction vector
             p3 = p2 + v * scalef * n2
             p4 = p1 + v * scalef * n1
 
             # plot shear force line and patch
-            ax.plot([p1[0], p4[0]], [p1[1], p4[1]], linewidth=1, color=(0.7, 0, 0))
-            ax.plot([p3[0], p4[0]], [p3[1], p4[1]], linewidth=1, color=(0.7, 0, 0))
-            ax.plot([p3[0], p2[0]], [p3[1], p2[1]], linewidth=1, color=(0.7, 0, 0))
+            ax.plot([p1[0], p4[0]], [p1[1], p4[1]],
+                    linewidth=1, color=(0.7, 0, 0))
+            ax.plot([p3[0], p4[0]], [p3[1], p4[1]],
+                    linewidth=1, color=(0.7, 0, 0))
+            ax.plot([p3[0], p2[0]], [p3[1], p2[1]],
+                    linewidth=1, color=(0.7, 0, 0))
             ax.add_patch(Polygon(
                 np.array([p1, p2, p3, p4]), facecolor=(1, 0, 0), linestyle='None', alpha=0.3
             ))
 
-            # plot end text values of bending moment
-            if i == 0:
-                mid = (p1 + p4) / 2
-                ax.text(mid[0], mid[1], "{:.3e}".format(n1), size=8, verticalalignment='bottom')
-            elif i == len(xis) - 2:
-                mid = (p2 + p3) / 2
-                ax.text(mid[0], mid[1], "{:.3e}".format(n2), size=8, verticalalignment='bottom')
+            if text_values == True:
+                # plot end text values of bending moment
+                if i == 0:
+                    mid = (p1 + p4) / 2
+                    ax.text(mid[0], mid[1], "{:.3e}".format(
+                        n1), size=8, verticalalignment='bottom')
+                elif i == len(xis) - 2:
+                    mid = (p2 + p3) / 2
+                    ax.text(mid[0], mid[1], "{:.3e}".format(
+                        n2), size=8, verticalalignment='bottom')
 
-            # plot text value of min bending moment
-            if i == min_index:
-                mid = (p1 + p4) / 2
-                ax.text(mid[0], mid[1], "{:.3e}".format(n1), size=8, verticalalignment='bottom')
+                # plot text value of min bending moment
+                if i == min_index:
+                    mid = (p1 + p4) / 2
+                    ax.text(mid[0], mid[1], "{:.3e}".format(
+                        n1), size=8, verticalalignment='bottom')
 
-            # plot text value of max bending moment
-            if i == max_index:
-                mid = (p1 + p4) / 2
-                ax.text(mid[0], mid[1], "{:.3e}".format(n1), size=8, verticalalignment='bottom')
+                # plot text value of max bending moment
+                if i == max_index:
+                    mid = (p1 + p4) / 2
+                    ax.text(mid[0], mid[1], "{:.3e}".format(
+                        n1), size=8, verticalalignment='bottom')
 
-    def plot_shear_force(self, ax, analysis_case, scalef, n):
+    def plot_shear_force(self, ax, fig, analysis_case, scalef, n, text_values=False, section=None):
         """Plots the axial force diagram from a static analysis defined by case_id. N.B. this
         method is adapted from the MATLAB code by F.P. van der Meer: plotVLine.m.
 
         :param ax: Axis object on which to draw the element
         :type ax: :class:`matplotlib.axes.Axes`
         :param analysis_case: Analysis case
+        :param fig: Figure object
+        :type fig: :class:`matplotlib
         :type analysis_case: :class:`~feastruct.fea.cases.AnalysisCase`
         :param float scalef: Factor by which to scale the shear force diagram
         :param int n: Number of points at which to plot the shear force diagram
+        :param bool text_values:  Whether or not the values of the internal forces are displayed
+        :param section: Element section with cross section resistance 'Vr', default is None
+        :type section: numpy.ndarray 
         """
 
         # get geometric properties
@@ -222,6 +237,9 @@ class FrameElement2D(FrameElement):
         end1 = node_coords[0, 0:2]
         end2 = node_coords[1, 0:2]
 
+        if section is not None:
+            bmd = np.ones(len(bmd)) * section
+
         # plot shear force diagram
         for (i, xi) in enumerate(xis[:-1]):
             v1 = sfd[i]
@@ -232,46 +250,62 @@ class FrameElement2D(FrameElement):
             p2 = end1 + xis[i+1] * (end2 - end1)
 
             # location of the shear force diagram end points
-            v = np.matmul(np.array([[0, -1], [1, 0]]), dx[0:2]) / l0  # direction vector
+            v = np.matmul(np.array([[0, -1], [1, 0]]),
+                          dx[0:2]) / l0  # direction vector
             p3 = p2 + v * scalef * v2
             p4 = p1 + v * scalef * v1
 
             # plot shear force line and patch
-            ax.plot([p1[0], p4[0]], [p1[1], p4[1]], linewidth=1, color=(0, 0.3, 0))
-            ax.plot([p3[0], p4[0]], [p3[1], p4[1]], linewidth=1, color=(0, 0.3, 0))
-            ax.plot([p3[0], p2[0]], [p3[1], p2[1]], linewidth=1, color=(0, 0.3, 0))
+            ax.plot([p1[0], p4[0]], [p1[1], p4[1]],
+                    linewidth=1, color=(0, 0.3, 0))
+            ax.plot([p3[0], p4[0]], [p3[1], p4[1]],
+                    linewidth=1, color=(0, 0.3, 0))
+            ax.plot([p3[0], p2[0]], [p3[1], p2[1]],
+                    linewidth=1, color=(0, 0.3, 0))
             ax.add_patch(Polygon(
                 np.array([p1, p2, p3, p4]), facecolor=(0, 0.5, 0), linestyle='None', alpha=0.3
             ))
 
-            # plot end text values of bending moment
-            if i == 0:
-                mid = (p1 + p4) / 2
-                ax.text(mid[0], mid[1], "{:.3e}".format(v1), size=8, verticalalignment='bottom')
-            elif i == len(xis) - 2:
-                mid = (p2 + p3) / 2
-                ax.text(mid[0], mid[1], "{:.3e}".format(v2), size=8, verticalalignment='bottom')
+            if text_values == True:
+                # plot end text values of bending moment
+                if i == 0:
+                    mid = (p1 + p4) / 2
+                    ax.text(mid[0], mid[1], "{:.3e}".format(
+                        v1), size=8, verticalalignment='bottom')
+                elif i == len(xis) - 2:
+                    mid = (p2 + p3) / 2
+                    ax.text(mid[0], mid[1], "{:.3e}".format(
+                        v2), size=8, verticalalignment='bottom')
 
-            # plot text value of min bending moment
-            if i == min_index:
-                mid = (p1 + p4) / 2
-                ax.text(mid[0], mid[1], "{:.3e}".format(v1), size=8, verticalalignment='bottom')
+                # plot text value of min bending moment
+                if i == min_index:
+                    mid = (p1 + p4) / 2
+                    ax.text(mid[0], mid[1], "{:.3e}".format(
+                        v1), size=8, verticalalignment='bottom')
 
-            # plot text value of max bending moment
-            if i == max_index:
-                mid = (p1 + p4) / 2
-                ax.text(mid[0], mid[1], "{:.3e}".format(v1), size=8, verticalalignment='bottom')
+                # plot text value of max bending moment
+                if i == max_index:
+                    mid = (p1 + p4) / 2
+                    ax.text(mid[0], mid[1], "{:.3e}".format(
+                        v1), size=8, verticalalignment='bottom')
 
-    def plot_bending_moment(self, ax, analysis_case, scalef, n):
+    def plot_bending_moment(self, ax, fig, analysis_case, scalef, n, text_values=False, section=None, startSegment=False, endSegment=False):
         """Plots the axial force diagram from a static analysis defined by case_id. N.B. this
         method is adapted from the MATLAB code by F.P. van der Meer: plotMLine.m.
 
+        Cross section resistance can be plotted by providing the sections parameter.
+
         :param ax: Axis object on which to draw the element
         :type ax: :class:`matplotlib.axes.Axes`
+        :param fig: Figure object
+        :type fig: :class:`matplotlib
         :param analysis_case: Analysis case
         :type analysis_case: :class:`~feastruct.fea.cases.AnalysisCase`
         :param float scalef: Factor by which to scale the bending moment diagram
         :param int n: Number of points at which to plot the bending moment diagram
+        :param bool text_values:  Whether or not the values of the internal forces are displayed 
+        :param section: Element section with cross section resistance 'Mr', default is None
+        :type section: numpy.ndarray 
         """
 
         # get geometric properties
@@ -288,6 +322,12 @@ class FrameElement2D(FrameElement):
         end1 = node_coords[0, 0:2]
         end2 = node_coords[1, 0:2]
 
+        if section is not None:
+            # reduce bmd / xis to only first and last value
+            xis = np.array([xis[0], xis[-1]])
+            bmd = np.array([bmd[0], bmd[-1]])
+            bmd = np.ones(len(bmd)) * section * -1
+
         # plot bending moment diagram
         for (i, xi) in enumerate(xis[:-1]):
             m1 = bmd[i]
@@ -298,35 +338,65 @@ class FrameElement2D(FrameElement):
             p2 = end1 + xis[i+1] * (end2 - end1)
 
             # location of the bending moment diagram end points
-            v = np.matmul(np.array([[0, -1], [1, 0]]), dx[0:2]) / l0  # direction vector
+            v = np.matmul(np.array([[0, -1], [1, 0]]),
+                          dx[0:2]) / l0  # direction vector
             p3 = p2 + v * scalef * m2
             p4 = p1 + v * scalef * m1
 
+            if section is None:
+                c = (0, 0, 0.7)
+                fc = (0.2, 0.4, 0.8)
+                alpha = 0.3
+
+            else:
+                c = (0, 0.7, 0)
+                fc = (0.2, 0.8, 0.4)
+                alpha = 0.1
+
             # plot bending moment line and patch
-            ax.plot([p1[0], p4[0]], [p1[1], p4[1]], linewidth=1, color=(0, 0, 0.7))
-            ax.plot([p3[0], p4[0]], [p3[1], p4[1]], linewidth=1, color=(0, 0, 0.7))
-            ax.plot([p3[0], p2[0]], [p3[1], p2[1]], linewidth=1, color=(0, 0, 0.7))
+            if section is None:
+                ax.plot([p1[0], p4[0]], [p1[1], p4[1]], linewidth=1, color=c)
+                ax.plot([p3[0], p2[0]], [p3[1], p2[1]], linewidth=1, color=c)
+                ax.plot([p3[0], p4[0]], [p3[1], p4[1]], linewidth=1, color=c)
+
+            # For section plot, only plot vertical lines at start and beginning
+            # of each segment
+            else:
+                if startSegment == True:
+                    ax.plot([p1[0], p4[0]], [p1[1], p4[1]],
+                            linewidth=1, color=c)
+                if endSegment == True:
+                    ax.plot([p3[0], p2[0]], [p3[1], p2[1]],
+                            linewidth=1, color=c)
+                ax.plot([p3[0], p4[0]], [p3[1], p4[1]], linewidth=1, color=c)
+
+                # ax.plot([p3[0], p4[0]], [p3[1], p4[1]], linewidth=1, color=c)
             ax.add_patch(Polygon(
-                np.array([p1, p2, p3, p4]), facecolor=(0.2, 0.4, 0.8), linestyle='None', alpha=0.3
+                np.array([p1, p2, p3, p4]), facecolor=fc, linestyle='None', alpha=alpha
             ))
 
-            # plot end text values of bending moment
-            if i == 0:
-                mid = (p1 + p4) / 2
-                ax.text(mid[0], mid[1], "{:.3e}".format(m1), size=8, verticalalignment='bottom')
-            elif i == len(xis) - 2:
-                mid = (p2 + p3) / 2
-                ax.text(mid[0], mid[1], "{:.3e}".format(m2), size=8, verticalalignment='bottom')
+            if text_values == True:
+                # plot end text values of bending moment
+                if i == 0:
+                    mid = (p1 + p4) / 2
+                    ax.text(mid[0], mid[1], "{:.3e}".format(
+                        m1), size=8, verticalalignment='bottom')
+                elif i == len(xis) - 2:
+                    mid = (p2 + p3) / 2
+                    ax.text(mid[0], mid[1], "{:.3e}".format(
+                        m2), size=8, verticalalignment='bottom')
 
-            # plot text value of min bending moment
-            if i == min_index:
-                mid = (p1 + p4) / 2
-                ax.text(mid[0], mid[1], "{:.3e}".format(m1), size=8, verticalalignment='bottom')
+                # plot text value of min bending moment
+                if i == min_index:
+                    mid = (p1 + p4) / 2
+                    ax.text(mid[0], mid[1], "{:.3e}".format(
+                        m1), size=8, verticalalignment='bottom')
 
-            # plot text value of max bending moment
-            if i == max_index:
-                mid = (p1 + p4) / 2
-                ax.text(mid[0], mid[1], "{:.3e}".format(m1), size=8, verticalalignment='bottom')
+                # plot text value of max bending moment
+                if i == max_index:
+                    mid = (p1 + p4) / 2
+                    ax.text(mid[0], mid[1], "{:.3e}".format(
+                        m1), size=8, verticalalignment='bottom')
 
 
 class Bar2D_2N(FrameElement2D):
@@ -750,7 +820,8 @@ class EulerBernoulli2D_2N(FrameElement2D):
             [0, 0, 0, 0, 0, 1]
         ])
 
-        return np.matmul(np.matmul(np.transpose(T), k_el), T)
+        return (T.transpose() @ k_el) @ T
+        # return np.matmul(np.matmul(np.transpose(T), k_el), T)
 
     def get_geometric_stiff_matrix(self, analysis_case):
         """Gets the geometric stiffness matrix for a two noded 2D Euler-Bernoulli frame element.
@@ -887,7 +958,8 @@ class EulerBernoulli2D_2N(FrameElement2D):
         """
 
         # get a list of the stations
-        stations = self.get_sampling_points(n=n, analysis_case=analysis_case, defl=True)
+        stations = self.get_sampling_points(
+            n=n, analysis_case=analysis_case, defl=True)
 
         # allocate results vector
         results = np.zeros((len(stations), 7))
@@ -1091,7 +1163,8 @@ class EulerBernoulli2D_2N(FrameElement2D):
         M2 = -f[5]
 
         # get sampling points
-        stations = self.get_sampling_points(n=n, analysis_case=analysis_case, bm=True)
+        stations = self.get_sampling_points(
+            n=n, analysis_case=analysis_case, bm=True)
 
         # get list of element loads
         element_loads = self.get_element_loads(analysis_case=analysis_case)
@@ -1109,7 +1182,8 @@ class EulerBernoulli2D_2N(FrameElement2D):
 
             # add bending moment due to element loads
             for element_load in element_loads:
-                bmd[i] += element_load.get_internal_bmd(self.map_to_isoparam(xi))
+                bmd[i] += element_load.get_internal_bmd(
+                    self.map_to_isoparam(xi))
 
         return (stations, bmd)
 
@@ -1214,7 +1288,8 @@ class EulerBernoulli2D_2N(FrameElement2D):
 
         # compute local displacements
         u = np.dot(N_u, np.array([u_el[0, 0], u_el[1, 0]]))
-        v = np.dot(N_v, np.array([u_el[0, 1], u_el[0, 2], u_el[1, 1], u_el[1, 2]]))
+        v = np.dot(N_v, np.array(
+            [u_el[0, 1], u_el[0, 2], u_el[1, 1], u_el[1, 2]]))
 
         return (u, v, None)
 

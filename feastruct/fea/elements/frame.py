@@ -118,14 +118,16 @@ class FrameElement(FiniteElement):
             phi0 = u_el[0, 2]
 
             # get rotations
-            rots = self.calculate_rotation(xis=stations, phi0=phi0, analysis_case=analysis_case)
+            rots = self.calculate_rotation(
+                xis=stations, phi0=phi0, analysis_case=analysis_case)
 
             # loop through rotations
             for i in range(len(stations) - 1):
                 # if there is a root between i and i + 1 (different signs)
                 if (rots[i] > 0 and rots[i+1] < 0) or (rots[i] < 0 and rots[i+1] > 0):
                     # determine root using brentq method
-                    def rot(x): return self.calculate_rotation(x, phi0, analysis_case)
+                    def rot(x): return self.calculate_rotation(
+                        x, phi0, analysis_case)
 
                     # search for root between two points
                     xi = optimize.brentq(rot, stations[i], stations[i+1])

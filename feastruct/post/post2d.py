@@ -27,8 +27,8 @@ class PostProcessor2D:
         self.analysis = analysis
         self.n_subdiv = n_subdiv
 
-    def plot_geom(self, analysis_case, ax=None, supports=True, loads=True, undeformed=True,
-                  deformed=False, def_scale=1, dashed=False):
+    def plot_geom(self, analysis_case, ax=None, fig=None, phi=None, axis=[False, False], supports=True, loads=True, undeformed=True,
+                  deformed=False, def_scale=1, dashed=False, showPlt=False):
         """Method used to plot the structural mesh in the undeformed and/or deformed state. If no
         axes object is provided, a new axes object is created. N.B. this method is adapted from the
         MATLAB code by F.P. van der Meer: plotGeom.m.
@@ -37,6 +37,11 @@ class PostProcessor2D:
         :type analysis_case: :class:`~feastruct.fea.cases.AnalysisCase`
         :param ax: Axes object on which to plot
         :type ax: :class:`matplotlib.axes.Axes`
+        :param fig: Figure object on which to plot
+        :type fig: :class:`matplotlib
+        :param phi: Element to section mapping matrix
+        :type phi: numpy.ndarray
+        :param [bool, bool] axis: list with bools whether or not the [x / y] axis is plotted
         :param bool supports: Whether or not the freedom case supports are rendered
         :param bool loads: Whether or not the load case loads are rendered
         :param bool undeformed: Whether or not the undeformed structure is plotted
@@ -44,20 +49,48 @@ class PostProcessor2D:
         :param float def_scale: Deformation scale used for plotting the deformed structure
         :param bool dashed: Whether or not to plot the structure with dashed lines if only the
             undeformed structure is to be plotted
+        :param bool showPlt: Whether or not to show the plot
         """
 
         if ax is None:
             (fig, ax) = plt.subplots()
+
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.spines['bottom'].set_visible(False)
+        ax.spines['left'].set_visible(False)
+
+        ax.get_xaxis().set_visible(axis[0])
+        ax.get_yaxis().set_visible(axis[1])
+
+        if phi is not None:
+            for i in range(phi.shape[0]):
+                # Check if element in segment i
+                if np.sum(phi[i, :]) > 0:
+                    # find smallest index of non-zero value
+                    i_start = np.min(np.nonzero(phi[i, :]))
+
+                    # find max. index of non-zero value
+                    i_end = np.max(np.nonzero(phi[i, :]))
+
+                    # plot the segment
+                    coord_start = self.analysis.elements[i_start].nodes[0]
+                    coord_end = self.analysis.elements[i_end].nodes[1]
+
+                    ax.plot([coord_start.x, coord_end.x], [coord_start.y, coord_end.y], linestyle='-',
+                            linewidth=0, marker='|', markersize=16, markeredgewidth=1.5, color='k')
 
         for el in self.analysis.elements:
             if deformed:
                 el.plot_deformed_element(
                     ax=ax, analysis_case=analysis_case, n=self.n_subdiv, def_scale=def_scale)
                 if undeformed:
-                    el.plot_element(ax=ax, linestyle='--', linewidth=1, marker='')
+                    el.plot_element(ax=ax, linestyle='--',
+                                    linewidth=1, marker='')
             else:
                 if dashed:
-                    el.plot_element(ax=ax, linestyle='--', linewidth=1, marker='')
+                    el.plot_element(ax=ax, linestyle='--',
+                                    linewidth=1, marker='')
                 else:
                     el.plot_element(ax=ax)
 
@@ -65,6 +98,10 @@ class PostProcessor2D:
         (xmin, xmax, ymin, ymax, _, _) = self.analysis.get_node_lims()
         ax.set_xlim(xmin-1e-12, xmax)
         ax.set_ylim(ymin-1e-12, ymax)
+
+        if axis[0] == True:
+            # Setup ticks to be at every 2nd element
+            ax.set_xticks([xmin, xmax])
 
         # get 2% of the maxmimum dimension
         small = 0.02 * max(xmax-xmin, ymax-ymin)
@@ -93,7 +130,7 @@ class PostProcessor2D:
             # plot supports
             for support in node_supports:
                 support.plot_support(
-                    ax=ax, small=small, get_support_angle=self.get_support_angle,
+                    ax=ax, small=small * 2.0, get_support_angle=self.get_support_angle,
                     analysis_case=analysis_case, deformed=deformed, def_scale=def_scale)
 
             # plot imposed displacements
@@ -139,7 +176,11 @@ class PostProcessor2D:
 
         ax.set_aspect(1)
         plt.box(on=None)
-        plt.show()
+
+        if showPlt == True:
+            plt.show()
+
+        return ax, fig
 
     def plot_reactions(self, analysis_case):
         """Method used to generate a plot of the reaction forces.
@@ -172,58 +213,150 @@ class PostProcessor2D:
         # plot the undeformed structure
         self.plot_geom(analysis_case=analysis_case, ax=ax, supports=False)
 
-    def plot_frame_forces(self, analysis_case, axial=False, shear=False, moment=False, scale=0.1):
+    def plot_decorator(func):
+        def wrapper(self, analysis_case, sections=None, ax=None, fig=None, axis=[False, False], phi=None, axial=False, shear=False, moment=False, text_values=True, scale=0.1, showPlt=False):
+            if ax is None:
+                (fig, ax) = plt.subplots()
+
+            ax.spines['top'].set_visible(False)
+            ax.spines['right'].set_visible(False)
+            ax.spines['bottom'].set_visible(False)
+            ax.spines['left'].set_visible(False)
+
+            ax.get_xaxis().set_visible(axis[0])
+            ax.get_yaxis().set_visible(axis[1])
+
+            # get size of structure
+            (xmin, xmax, ymin, ymax, _, _) = self.analysis.get_node_lims()
+
+            # determine maximum forces
+            max_axial = 0
+            max_shear = 0
+            max_moment = 0
+
+            # loop throuh each element to get max forces
+            for el in self.analysis.elements:
+                if axial:
+                    (_, afd) = el.get_afd(
+                        n=self.n_subdiv, analysis_case=analysis_case)
+                    max_axial = max(max_axial, max(
+                        abs(min(afd)), abs(max(afd))))
+                if shear:
+                    (_, sfd) = el.get_sfd(
+                        n=self.n_subdiv, analysis_case=analysis_case)
+                    max_shear = max(max_shear, max(
+                        abs(min(sfd)), abs(max(sfd))))
+                if moment:
+                    (_, bmd) = el.get_bmd(
+                        n=self.n_subdiv, analysis_case=analysis_case)
+                    max_moment = max(max_moment, max(
+                        abs(min(bmd)), abs(max(bmd))))
+
+            scale_axial = scale * \
+                max(xmax - xmin, ymax - ymin) / max(max_axial, 1e-8)
+            scale_shear = scale * \
+                max(xmax - xmin, ymax - ymin) / max(max_shear, 1e-8)
+            scale_moment = scale * \
+                max(xmax - xmin, ymax - ymin) / max(max_moment, 1e-8)
+
+            # loop throgh each element to plot the forces
+            i = 0
+            for n, el in enumerate(self.analysis.elements):
+                # Assign section to element, if sections are provided
+                if sections is not None:
+                    section = sections[n]
+                else:
+                    section = None
+
+                # For section plot, only plot vertical lines at start and beginning
+                # of each segment
+                startSegment = False
+                endSegment = False
+
+                # Check if element is in segment i
+                if phi is not None:
+                    if np.sum(phi[i, :]) > 0:
+                        # find smallest index of non-zero value
+                        i_start = np.min(np.nonzero(phi[i, :]))
+
+                        # find max. index of non-zero value
+                        i_end = np.max(np.nonzero(phi[i, :]))
+
+                        # if element is at start / beginning of segment, plot
+                        # vertical line
+                        if n == i_start:
+                            startSegment = True
+                        if n == i_end:
+                            i += 1
+                            endSegment = True
+
+                if axial:
+                    el.plot_axial_force(
+                        ax=ax, fig=fig, analysis_case=analysis_case, scalef=scale_axial, n=self.n_subdiv, text_values=text_values, section=section)
+                if shear:
+                    el.plot_shear_force(
+                        ax=ax, fig=fig, analysis_case=analysis_case, scalef=scale_shear, n=self.n_subdiv, text_values=text_values, section=section)
+                if moment:
+                    el.plot_bending_moment(
+                        ax=ax, fig=fig, analysis_case=analysis_case, scalef=scale_moment, n=self.n_subdiv, text_values=text_values, section=section, startSegment=startSegment, endSegment=endSegment)
+
+            # plot the undeformed structure
+            ax, fig = self.plot_geom(analysis_case=analysis_case, phi=phi,
+                                     ax=ax, fig=fig, axis=axis, loads=False, showPlt=showPlt)
+
+            return ax, fig
+
+        return wrapper
+
+    @plot_decorator
+    def plot_frame_forces(self, analysis_case, ax=None, fig=None, axis=[False, False], phi=None, axial=False, shear=False, moment=False, text_values=True, scale=0.1, showPlt=False):
         """Method used to plot internal frame actions resulting from the analysis case.
 
         :param analysis_case: Analysis case
         :type analysis_case: :class:`~feastruct.fea.cases.AnalysisCase`
+        :param ax: Axes object on which to plot
+        :type ax: :class:`matplotlib.axes.Axes`
+        :param fig: Figure object on which to plot
+        :type fig: :class:`matplotlib
+        :param [bool, bool] axis: list with bools whether or not the [x / y] axis is plotted
+        :param phi: Element to section mapping matrix
+        :type phi: numpy.ndarray
         :param bool axial: Whether or not the axial force diagram is displayed
         :param bool shear: Whether or not the shear force diagram is displayed
         :param bool moment: Whether or not the bending moment diagram is displayed
+
+        :param bool text_values: Whether or not the values of the internal forces are displayed
         :param float scale: Scale used for plotting internal force diagrams. Corresponds to the
             fraction of the window that the largest action takes up
+        :param bool showPlt: Whether or not to show the plot
         """
+        pass
 
-        (fig, ax) = plt.subplots()
+    @plot_decorator
+    def plot_frame_sections(self, analysis_case, sections, ax=None, fig=None, axis=[False, False], phi=None, axial=False, shear=False, moment=False, text_values=True, scale=0.1, showPlt=False):
+        """Method used to plot frame sections resulting the element to section mapping.
 
-        # get size of structure
-        (xmin, xmax, ymin, ymax, _, _) = self.analysis.get_node_lims()
+        :param analysis_case: Analysis case
+        :type analysis_case: :class:`~feastruct.fea.cases.AnalysisCase`
+        :param sections: Element section vector with cross section resistance (on of the following: 'Vr', 'Mr')
+        :type sections: numpy.ndarray 
+        :param ax: Axes object on which to plot
+        :type ax: :class:`matplotlib.axes.Axes`
+        :param fig: Figure object on which to plot
+        :type fig: :class:`matplotlib
+        :param [bool, bool] axis: list with bools whether or not the [x / y] axis is plotted
+        :param phi: Element to section mapping matrix
+        :type phi: numpy.ndarray
+        :param bool axial: Whether or not the axial force diagram is displayed
+        :param bool shear: Whether or not the shear force diagram is displayed
+        :param bool moment: Whether or not the bending moment diagram is displayed
 
-        # determine maximum forces
-        max_axial = 0
-        max_shear = 0
-        max_moment = 0
-
-        # loop throuh each element to get max forces
-        for el in self.analysis.elements:
-            if axial:
-                (_, afd) = el.get_afd(n=self.n_subdiv, analysis_case=analysis_case)
-                max_axial = max(max_axial, max(abs(min(afd)), abs(max(afd))))
-            if shear:
-                (_, sfd) = el.get_sfd(n=self.n_subdiv, analysis_case=analysis_case)
-                max_shear = max(max_shear, max(abs(min(sfd)), abs(max(sfd))))
-            if moment:
-                (_, bmd) = el.get_bmd(n=self.n_subdiv, analysis_case=analysis_case)
-                max_moment = max(max_moment, max(abs(min(bmd)), abs(max(bmd))))
-
-        scale_axial = scale * max(xmax - xmin, ymax - ymin) / max(max_axial, 1e-8)
-        scale_shear = scale * max(xmax - xmin, ymax - ymin) / max(max_shear, 1e-8)
-        scale_moment = scale * max(xmax - xmin, ymax - ymin) / max(max_moment, 1e-8)
-
-        # loop throgh each element to plot the forces
-        for el in self.analysis.elements:
-            if axial:
-                el.plot_axial_force(
-                    ax=ax, analysis_case=analysis_case, scalef=scale_axial, n=self.n_subdiv)
-            if shear:
-                el.plot_shear_force(
-                    ax=ax, analysis_case=analysis_case, scalef=scale_shear, n=self.n_subdiv)
-            if moment:
-                el.plot_bending_moment(
-                    ax=ax, analysis_case=analysis_case, scalef=scale_moment, n=self.n_subdiv)
-
-        # plot the undeformed structure
-        self.plot_geom(analysis_case=analysis_case, ax=ax)
+        :param bool text_values: Whether or not the values of the internal forces are displayed
+        :param float scale: Scale used for plotting internal force diagrams. Corresponds to the
+            fraction of the window that the largest action takes up
+        :param bool showPlt: Whether or not to show the plot
+        """
+        pass
 
     def plot_buckling_results(self, analysis_case, buckling_mode=0):
         """Method used to plot a buckling eigenvector. The undeformed structure is plotted with a
@@ -247,7 +380,8 @@ class PostProcessor2D:
             (w, v_el) = el.get_buckling_results(
                 analysis_case=analysis_case, buckling_mode=buckling_mode)
 
-            max_v = max(max_v, abs(v_el[0, 0]), abs(v_el[0, 1]), abs(v_el[1, 0]), abs(v_el[1, 1]))
+            max_v = max(max_v, abs(v_el[0, 0]), abs(
+                v_el[0, 1]), abs(v_el[1, 0]), abs(v_el[1, 1]))
 
         # determine plot scale
         scale = 0.1 * max(xmax - xmin, ymax - ymin) / max_v
@@ -261,7 +395,8 @@ class PostProcessor2D:
                 ax=ax, analysis_case=analysis_case, n=self.n_subdiv, def_scale=scale, u_el=v_el)
 
         # plot the load factor (eigenvalue)
-        ax.set_title("Load Factor for Mode {:d}: {:.4e}".format(buckling_mode, w), size=10)
+        ax.set_title("Load Factor for Mode {:d}: {:.4e}".format(
+            buckling_mode, w), size=10)
 
         # plot the undeformed structure
         self.plot_geom(analysis_case=analysis_case, ax=ax, dashed=True)
@@ -288,7 +423,8 @@ class PostProcessor2D:
             (w, v_el) = el.get_frequency_results(
                 analysis_case=analysis_case, frequency_mode=frequency_mode)
 
-            max_v = max(max_v, abs(v_el[0, 0]), abs(v_el[0, 1]), abs(v_el[1, 0]), abs(v_el[1, 1]))
+            max_v = max(max_v, abs(v_el[0, 0]), abs(
+                v_el[0, 1]), abs(v_el[1, 0]), abs(v_el[1, 1]))
 
         # determine plot scale
         scale = 0.1 * max(xmax - xmin, ymax - ymin) / max_v
@@ -302,7 +438,8 @@ class PostProcessor2D:
                 ax=ax, analysis_case=analysis_case, n=self.n_subdiv, def_scale=scale, u_el=v_el)
 
         # plot the frequency (eigenvalue)
-        ax.set_title("Frequency for Mode {:d}: {:.4e} Hz".format(frequency_mode, w), size=10)
+        ax.set_title("Frequency for Mode {:d}: {:.4e} Hz".format(
+            frequency_mode, w), size=10)
 
         # plot the undeformed structure
         self.plot_geom(analysis_case=analysis_case, ax=ax, dashed=True)
