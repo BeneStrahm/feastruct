@@ -48,13 +48,16 @@ class FrameAnalysis(FiniteElementAnalysis):
         """
 
         if el_type == 'Bar2-2D':
-            element = frame2d.Bar2D_2N(nodes=nodes, material=material, section=section)
+            element = frame2d.Bar2D_2N(
+                nodes=nodes, material=material, section=section)
         elif el_type == 'EB2-2D':
-            element = frame2d.EulerBernoulli2D_2N(nodes=nodes, material=material, section=section)
+            element = frame2d.EulerBernoulli2D_2N(
+                nodes=nodes, material=material, section=section)
         elif el_type == 'Bar2-3D':
-            element = frame3d.Bar3D_2N(nodes=nodes, material=material, section=section)
+            element = frame3d.Bar3D_2N(
+                nodes=nodes, material=material, section=section)
 
-        return(FiniteElementAnalysis.create_element(self, element=element))
+        return (FiniteElementAnalysis.create_element(self, element=element))
 
 
 class FrameAnalysis2D(FrameAnalysis):
