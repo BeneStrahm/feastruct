@@ -346,17 +346,18 @@ class FrameElement2D(FrameElement):
             if section is None:
                 c = (0, 0, 0.7)
                 fc = (0.2, 0.4, 0.8)
-                alpha = 0.3
+                alpha = 0.05
 
             else:
                 c = (0, 0.7, 0)
                 fc = (0.2, 0.8, 0.4)
-                alpha = 0.1
+                alpha = 0.03
 
             # plot bending moment line and patch
             if section is None:
-                ax.plot([p1[0], p4[0]], [p1[1], p4[1]], linewidth=1, color=c)
-                ax.plot([p3[0], p2[0]], [p3[1], p2[1]], linewidth=1, color=c)
+                # Edge lines of each part is removed, only the bottom line is remained
+                # ax.plot([p1[0], p4[0]], [p1[1], p4[1]], linewidth=1, color=c)
+                # ax.plot([p3[0], p2[0]], [p3[1], p2[1]], linewidth=1, color=c)
                 ax.plot([p3[0], p4[0]], [p3[1], p4[1]], linewidth=1, color=c)
 
             # For section plot, only plot vertical lines at start and beginning
