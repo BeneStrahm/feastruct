@@ -289,8 +289,30 @@ class FrameElement2D(FrameElement):
                     ax.text(mid[0], mid[1], "{:.3e}".format(
                         v1), size=8, verticalalignment='bottom')
 
-    def plot_bending_moment(self, ax, fig, analysis_case, scalef, n, text_values=False, section=None, startSegment=False, endSegment=False):
-        """Plots the axial force diagram from a static analysis defined by case_id. N.B. this
+
+    def to_list(self, array_like):
+        """
+        Converts an array-like object (numpy array, pandas Series, pandas DataFrame)
+        to a Python list. Used for "plot_bending_moment" as a helper function.
+
+        Parameters:
+            array_like: The input array-like object.
+            
+        Returns:
+            A Python list representing the data in the array-like object.
+        """
+        if hasattr(array_like, "values"):  # For pandas objects (Series, DataFrame)
+            return array_like.values.tolist()
+        elif hasattr(array_like, "tolist"):  # For numpy arrays or similar objects
+            return array_like.tolist()
+        else:
+            # If already a list, or an unsupported type
+            return list(array_like)
+        
+
+    def plot_bending_moment(self, ax, fig, analysis_case, scalef, n, psi=None, assigned_colors=None, text_values=False, section=None, startSegment=False, endSegment=False):
+        """
+        Plots the axial force diagram from a static analysis defined by case_id. N.B. this
         method is adapted from the MATLAB code by F.P. van der Meer: plotMLine.m.
 
         Cross section resistance can be plotted by providing the sections parameter.
@@ -303,11 +325,11 @@ class FrameElement2D(FrameElement):
         :type analysis_case: :class:`~feastruct.fea.cases.AnalysisCase`
         :param float scalef: Factor by which to scale the bending moment diagram
         :param int n: Number of points at which to plot the bending moment diagram
-        :param bool text_values:  Whether or not the values of the internal forces are displayed 
+        :param bool text_values:  Whether or not the values of the internal forces are displayed
         :param section: Element section with cross section resistance 'Mr', default is None
-        :type section: numpy.ndarray 
-        """
+        :type section: numpy.ndarray
 
+        """
         # get geometric properties
         (node_coords, dx, l0, _) = self.get_geometric_properties()
 
@@ -327,6 +349,12 @@ class FrameElement2D(FrameElement):
             xis = np.array([xis[0], xis[-1]])
             bmd = np.array([bmd[0], bmd[-1]])
             bmd = np.ones(len(bmd)) * section * -1
+
+            section_num = 0  # To use for iteration in the for loop below
+
+            # Ensure `assigned_colors` is a Python list if provided
+            if assigned_colors is not None:
+                assigned_colors = self.to_list(assigned_colors)  # convert assigned_colors to a Python list
 
         # plot bending moment diagram
         for (i, xi) in enumerate(xis[:-1]):
@@ -349,9 +377,22 @@ class FrameElement2D(FrameElement):
                 alpha = 0.05
 
             else:
-                c = (0, 0.7, 0)
-                fc = (0.2, 0.8, 0.4)
-                alpha = 0.03
+                # Loop through psi to get the index of the used section for each segment
+                for i_section, v_section in enumerate(psi[section_num]):
+                    if v_section == 1:
+                        color_index = i_section
+                        break
+
+                #c = (0, 0.7, 0)
+                assigned_color = assigned_colors[color_index]
+                section_num += 1
+                # c = assigned_color
+
+                # fc = (0.2, 0.8, 0.4)
+                c = assigned_color
+                fc = assigned_color
+                #alpha = 0.03
+                alpha = 0.3
 
             # plot bending moment line and patch
             if section is None:

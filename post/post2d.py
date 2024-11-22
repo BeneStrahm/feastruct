@@ -214,7 +214,7 @@ class PostProcessor2D:
         self.plot_geom(analysis_case=analysis_case, ax=ax, supports=False)
 
     def plot_decorator(func):
-        def wrapper(self, analysis_case, sections=None, ax=None, fig=None, axis=[False, False], phi=None, axial=False, shear=False, moment=False, text_values=True, scale=0.1, showPlt=False):
+        def wrapper(self, analysis_case, sections=None, ax=None, fig=None, axis=[False, False], phi=None, psi=None, assigned_colors=None, axial=False, shear=False, moment=False, text_values=True, scale=0.1, showPlt=False):
             if ax is None:
                 (fig, ax) = plt.subplots()
 
@@ -298,7 +298,7 @@ class PostProcessor2D:
                         ax=ax, fig=fig, analysis_case=analysis_case, scalef=scale_shear, n=self.n_subdiv, text_values=text_values, section=section)
                 if moment:
                     el.plot_bending_moment(
-                        ax=ax, fig=fig, analysis_case=analysis_case, scalef=scale_moment, n=self.n_subdiv, text_values=text_values, section=section, startSegment=startSegment, endSegment=endSegment)
+                        ax=ax, fig=fig, analysis_case=analysis_case, psi=psi, assigned_colors=assigned_colors, scalef=scale_moment, n=self.n_subdiv, text_values=text_values, section=section, startSegment=startSegment, endSegment=endSegment)
 
             # plot the undeformed structure
             ax, fig = self.plot_geom(analysis_case=analysis_case, phi=phi,
@@ -333,7 +333,7 @@ class PostProcessor2D:
         pass
 
     @plot_decorator
-    def plot_frame_sections(self, analysis_case, sections, ax=None, fig=None, axis=[False, False], phi=None, axial=False, shear=False, moment=False, text_values=True, scale=0.1, showPlt=False):
+    def plot_frame_sections(self, analysis_case, sections, ax=None, fig=None, axis=[False, False], phi=None, psi=None, assigned_colors=None, axial=False, shear=False, moment=False, text_values=True, scale=0.1, showPlt=False):
         """Method used to plot frame sections resulting the element to section mapping.
 
         :param analysis_case: Analysis case
