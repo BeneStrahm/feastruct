@@ -292,8 +292,9 @@ class FrameElement2D(FrameElement):
 
     def to_list(self, array_like):
         """
+        A helper function for "plot_bending_moment".
         Converts an array-like object (numpy array, pandas Series, pandas DataFrame)
-        to a Python list. Used for "plot_bending_moment" as a helper function.
+        to a Python list.
 
         Parameters:
             array_like: The input array-like object.
@@ -308,7 +309,42 @@ class FrameElement2D(FrameElement):
         else:
             # If already a list, or an unsupported type
             return list(array_like)
-        
+    
+
+    def save_data_to_file_for_test(self, data):
+        """
+        This function is only for testing the code and should be deleted for the main version.
+
+        """
+
+        # Import libraries
+        import numpy as np
+        import datetime
+        import os
+
+        # Initiate folder address (replace with your desired location)
+        folder_path = "D:\\Work\\Germany\\HIWI\ILEK\\2024-November\\Color-Assignment-to-Sections\\Files-to-see-results\\from_plot_bending_moment"
+
+        # Create the folder if it doesn't exist
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+
+        # Get the current date and time
+        now = datetime.datetime.now()
+        filename = f"{now:%Y-%m-%d_%H-%M-%S}"  # Format filename with date and time
+
+        # Check data type and save accordingly
+        if isinstance(data, np.ndarray):
+            # Save NumPy array
+            file_path = os.path.join(folder_path, filename + ".npy")
+            np.save(file_path, data)
+        else:
+            # Save other data types (as string)
+            file_path = os.path.join(folder_path, filename + ".txt")
+            with open(file_path, "w") as f:
+                f.write(str(data))
+
+
 
     def plot_bending_moment(self, ax, fig, analysis_case, scalef, n, psi=None, assigned_colors=None, text_values=False, section=None, startSegment=False, endSegment=False):
         """
@@ -330,6 +366,7 @@ class FrameElement2D(FrameElement):
         :type section: numpy.ndarray
 
         """
+
         # get geometric properties
         (node_coords, dx, l0, _) = self.get_geometric_properties()
 
@@ -353,8 +390,8 @@ class FrameElement2D(FrameElement):
             section_num = 0  # To use for iteration in the for loop below
 
             # Ensure `assigned_colors` is a Python list if provided
-            if assigned_colors is not None:
-                assigned_colors = self.to_list(assigned_colors)  # convert assigned_colors to a Python list
+            #if assigned_colors is not None:
+            #    assigned_colors = self.to_list(assigned_colors)  # convert assigned_colors to a Python list
 
         # plot bending moment diagram
         for (i, xi) in enumerate(xis[:-1]):
@@ -378,11 +415,12 @@ class FrameElement2D(FrameElement):
 
             else:
                 # Loop through psi to get the index of the used section for each segment
-                for i_section, v_section in enumerate(psi[section_num]):
+                for i_section, v_section in enumerate(psi[i:]):
                     if v_section == 1:
                         color_index = i_section
                         break
-
+            
+                # self.save_data_to_file_for_test(color_index)
                 #c = (0, 0.7, 0)
                 assigned_color = assigned_colors[color_index]
                 section_num += 1
