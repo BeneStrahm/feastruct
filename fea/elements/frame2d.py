@@ -372,7 +372,7 @@ class FrameElement2D(FrameElement):
 
                 c = assigned_color
                 fc = assigned_color
-                alpha = 0.03
+                alpha = 0.1
 
                 # For section plot, only plot vertical lines at start and beginning
                 # of each segment
