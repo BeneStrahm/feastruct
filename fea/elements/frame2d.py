@@ -290,63 +290,7 @@ class FrameElement2D(FrameElement):
                         v1), size=8, verticalalignment='bottom')
 
 
-    def to_list(self, array_like):
-        """
-        A helper function for "plot_bending_moment".
-        Converts an array-like object (numpy array, pandas Series, pandas DataFrame)
-        to a Python list.
-
-        Parameters:
-            array_like: The input array-like object.
-            
-        Returns:
-            A Python list representing the data in the array-like object.
-        """
-        if hasattr(array_like, "values"):  # For pandas objects (Series, DataFrame)
-            return array_like.values.tolist()
-        elif hasattr(array_like, "tolist"):  # For numpy arrays or similar objects
-            return array_like.tolist()
-        else:
-            # If already a list, or an unsupported type
-            return list(array_like)
-    
-
-    def save_data_to_file_for_test(self, data):
-        """
-        This function is only for testing the code and should be deleted for the main version.
-
-        """
-
-        # Import libraries
-        import numpy as np
-        import datetime
-        import os
-
-        # Initiate folder address (replace with your desired location)
-        folder_path = "D:\\Work\\Germany\\HIWI\ILEK\\2024-November\\Color-Assignment-to-Sections\\Files-to-see-results\\from_plot_bending_moment"
-
-        # Create the folder if it doesn't exist
-        if not os.path.exists(folder_path):
-            os.makedirs(folder_path)
-
-        # Get the current date and time
-        now = datetime.datetime.now()
-        filename = f"{now:%Y-%m-%d_%H-%M-%S}"  # Format filename with date and time
-
-        # Check data type and save accordingly
-        if isinstance(data, np.ndarray):
-            # Save NumPy array
-            file_path = os.path.join(folder_path, filename + ".npy")
-            np.save(file_path, data)
-        else:
-            # Save other data types (as string)
-            file_path = os.path.join(folder_path, filename + ".txt")
-            with open(file_path, "w") as f:
-                f.write(str(data))
-
-
-
-    def plot_bending_moment(self, ax, fig, analysis_case, scalef, n, psi=None, assigned_colors=None, text_values=False, section=None, startSegment=False, endSegment=False):
+    def plot_bending_moment(self, ax, fig, analysis_case, scalef, n, assigned_color=None, text_values=False, section=None, startSegment=False, endSegment=False):
         """
         Plots the axial force diagram from a static analysis defined by case_id. N.B. this
         method is adapted from the MATLAB code by F.P. van der Meer: plotMLine.m.
@@ -360,6 +304,7 @@ class FrameElement2D(FrameElement):
         :param analysis_case: Analysis case
         :type analysis_case: :class:`~feastruct.fea.cases.AnalysisCase`
         :param float scalef: Factor by which to scale the bending moment diagram
+        :param assigned_color: Assigned color to each section type for each segment (if "sections" is not None)
         :param int n: Number of points at which to plot the bending moment diagram
         :param bool text_values:  Whether or not the values of the internal forces are displayed
         :param section: Element section with cross section resistance 'Mr', default is None
@@ -387,12 +332,6 @@ class FrameElement2D(FrameElement):
             bmd = np.array([bmd[0], bmd[-1]])
             bmd = np.ones(len(bmd)) * section * -1
 
-            section_num = 0  # To use for iteration in the for loop below
-
-            # Ensure `assigned_colors` is a Python list if provided
-            #if assigned_colors is not None:
-            #    assigned_colors = self.to_list(assigned_colors)  # convert assigned_colors to a Python list
-
         # plot bending moment diagram
         for (i, xi) in enumerate(xis[:-1]):
             m1 = bmd[i]
@@ -413,35 +352,30 @@ class FrameElement2D(FrameElement):
                 fc = (0.2, 0.4, 0.8)
                 alpha = 0.05
 
-            else:
-                # Loop through psi to get the index of the used section for each segment
-                for i_section, v_section in enumerate(psi[i:]):
-                    if v_section == 1:
-                        color_index = i_section
-                        break
-            
-                # self.save_data_to_file_for_test(color_index)
-                #c = (0, 0.7, 0)
-                assigned_color = assigned_colors[color_index]
-                section_num += 1
-                # c = assigned_color
-
-                # fc = (0.2, 0.8, 0.4)
-                c = assigned_color
-                fc = assigned_color
-                #alpha = 0.03
-                alpha = 0.3
-
-            # plot bending moment line and patch
-            if section is None:
                 # Edge lines of each part is removed, only the bottom line is remained
                 # ax.plot([p1[0], p4[0]], [p1[1], p4[1]], linewidth=1, color=c)
                 # ax.plot([p3[0], p2[0]], [p3[1], p2[1]], linewidth=1, color=c)
                 ax.plot([p3[0], p4[0]], [p3[1], p4[1]], linewidth=1, color=c)
+                ax.add_patch(Polygon(
+                        np.array([p1, p2, p3, p4]), facecolor=fc, linestyle='None', alpha=alpha
+                    ))
 
-            # For section plot, only plot vertical lines at start and beginning
-            # of each segment
+
             else:
+                #Find the for loop for assigning sections and colors to
+                # segments in fea.post.post2d.plot_decorator. The For loop in this code
+                # is not iterating through the segments (if "sections" is not None)
+
+                # The next two lines were colors of sections before assigning different colors
+                # c = (0, 0.7, 0)
+                # fc = (0.2, 0.8, 0.4)
+
+                c = assigned_color
+                fc = assigned_color
+                alpha = 0.03
+
+                # For section plot, only plot vertical lines at start and beginning
+                # of each segment
                 if startSegment == True:
                     ax.plot([p1[0], p4[0]], [p1[1], p4[1]],
                             linewidth=1, color=c)
@@ -450,10 +384,10 @@ class FrameElement2D(FrameElement):
                             linewidth=1, color=c)
                 ax.plot([p3[0], p4[0]], [p3[1], p4[1]], linewidth=1, color=c)
 
-                # ax.plot([p3[0], p4[0]], [p3[1], p4[1]], linewidth=1, color=c)
-            ax.add_patch(Polygon(
-                np.array([p1, p2, p3, p4]), facecolor=fc, linestyle='None', alpha=alpha
-            ))
+                ax.add_patch(Polygon(
+                    np.array([p1, p2, p3, p4]), facecolor=fc, linestyle='None', alpha=alpha
+                ))
+    
 
             if text_values == True:
                 # plot end text values of bending moment
@@ -477,6 +411,7 @@ class FrameElement2D(FrameElement):
                     mid = (p1 + p4) / 2
                     ax.text(mid[0], mid[1], "{:.3e}".format(
                         m1), size=8, verticalalignment='bottom')
+                        
 
 
 class Bar2D_2N(FrameElement2D):

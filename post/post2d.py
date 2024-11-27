@@ -213,6 +213,26 @@ class PostProcessor2D:
         # plot the undeformed structure
         self.plot_geom(analysis_case=analysis_case, ax=ax, supports=False)
 
+
+    def get_color(self, index_segment, psi, assigned_colors):
+        """
+        This is a helper function for "plot_decorator" to get the color
+        of the segment from the list of assigned_colors.
+        This is used for the bending moment plot, when sections is not None.
+
+        Return:
+        assinged color of the segment.
+
+        """
+        row_psi = psi[index_segment]
+        row_psi = row_psi.tolist()
+        for i_item, v_item in enumerate(row_psi):
+            if v_item == 1:
+                section_index = i_item
+        
+        return assigned_colors[section_index]
+
+
     def plot_decorator(func):
         def wrapper(self, analysis_case, sections=None, ax=None, fig=None, axis=[False, False], phi=None, psi=None, assigned_colors=None, axial=False, shear=False, moment=False, text_values=True, scale=0.1, showPlt=False):
             if ax is None:
@@ -262,6 +282,10 @@ class PostProcessor2D:
             # loop throgh each element to plot the forces
             i = 0
             for n, el in enumerate(self.analysis.elements):
+                # Assign color of the first segment from assigned_colors
+                # using for bending moment plot:
+                assigned_color = self.get_color(i, psi, assigned_colors)
+
                 # Assign section to element, if sections are provided
                 if sections is not None:
                     section = sections[n]
@@ -298,7 +322,7 @@ class PostProcessor2D:
                         ax=ax, fig=fig, analysis_case=analysis_case, scalef=scale_shear, n=self.n_subdiv, text_values=text_values, section=section)
                 if moment:
                     el.plot_bending_moment(
-                        ax=ax, fig=fig, analysis_case=analysis_case, psi=psi, assigned_colors=assigned_colors, scalef=scale_moment, n=self.n_subdiv, text_values=text_values, section=section, startSegment=startSegment, endSegment=endSegment)
+                        ax=ax, fig=fig, analysis_case=analysis_case, assigned_color=assigned_color, scalef=scale_moment, n=self.n_subdiv, text_values=text_values, section=section, startSegment=startSegment, endSegment=endSegment)
 
             # plot the undeformed structure
             ax, fig = self.plot_geom(analysis_case=analysis_case, phi=phi,
@@ -333,7 +357,7 @@ class PostProcessor2D:
         pass
 
     @plot_decorator
-    def plot_frame_sections(self, analysis_case, sections, ax=None, fig=None, axis=[False, False], phi=None, psi=None, assigned_colors=None, axial=False, shear=False, moment=False, text_values=True, scale=0.1, showPlt=False):
+    def plot_frame_sections(self, analysis_case, sections, ax=None, fig=None, axis=[False, False], phi=None, axial=False, shear=False, moment=False, text_values=True, scale=0.1, showPlt=False):
         """Method used to plot frame sections resulting the element to section mapping.
 
         :param analysis_case: Analysis case
