@@ -289,8 +289,10 @@ class FrameElement2D(FrameElement):
                     ax.text(mid[0], mid[1], "{:.3e}".format(
                         v1), size=8, verticalalignment='bottom')
 
-    def plot_bending_moment(self, ax, fig, analysis_case, scalef, n, text_values=False, section=None, startSegment=False, endSegment=False):
-        """Plots the axial force diagram from a static analysis defined by case_id. N.B. this
+
+    def plot_bending_moment(self, ax, fig, analysis_case, scalef, n, assigned_color=None, text_values=False, section=None, startSegment=False, endSegment=False):
+        """
+        Plots the axial force diagram from a static analysis defined by case_id. N.B. this
         method is adapted from the MATLAB code by F.P. van der Meer: plotMLine.m.
 
         Cross section resistance can be plotted by providing the sections parameter.
@@ -302,10 +304,12 @@ class FrameElement2D(FrameElement):
         :param analysis_case: Analysis case
         :type analysis_case: :class:`~feastruct.fea.cases.AnalysisCase`
         :param float scalef: Factor by which to scale the bending moment diagram
+        :param assigned_color: Assigned color to each section type for each segment (if "sections" is not None)
         :param int n: Number of points at which to plot the bending moment diagram
-        :param bool text_values:  Whether or not the values of the internal forces are displayed 
+        :param bool text_values:  Whether or not the values of the internal forces are displayed
         :param section: Element section with cross section resistance 'Mr', default is None
-        :type section: numpy.ndarray 
+        :type section: numpy.ndarray
+
         """
 
         # get geometric properties
@@ -346,22 +350,32 @@ class FrameElement2D(FrameElement):
             if section is None:
                 c = (0, 0, 0.7)
                 fc = (0.2, 0.4, 0.8)
-                alpha = 0.3
+                alpha = 0.05
+
+                # Edge lines of each part is removed, only the bottom line is remained
+                # ax.plot([p1[0], p4[0]], [p1[1], p4[1]], linewidth=1, color=c)
+                # ax.plot([p3[0], p2[0]], [p3[1], p2[1]], linewidth=1, color=c)
+                ax.plot([p3[0], p4[0]], [p3[1], p4[1]], linewidth=1, color=c)
+                ax.add_patch(Polygon(
+                        np.array([p1, p2, p3, p4]), facecolor=fc, linestyle='None', alpha=alpha
+                    ))
+
 
             else:
-                c = (0, 0.7, 0)
-                fc = (0.2, 0.8, 0.4)
+                #Find the for loop for assigning sections and colors to
+                # segments in fea.post.post2d.plot_decorator. The For loop in this code
+                # is not iterating through the segments (if "sections" is not None)
+
+                # The next two lines were colors of sections before assigning different colors
+                # c = (0, 0.7, 0)
+                # fc = (0.2, 0.8, 0.4)
+
+                c = assigned_color
+                fc = assigned_color
                 alpha = 0.1
 
-            # plot bending moment line and patch
-            if section is None:
-                ax.plot([p1[0], p4[0]], [p1[1], p4[1]], linewidth=1, color=c)
-                ax.plot([p3[0], p2[0]], [p3[1], p2[1]], linewidth=1, color=c)
-                ax.plot([p3[0], p4[0]], [p3[1], p4[1]], linewidth=1, color=c)
-
-            # For section plot, only plot vertical lines at start and beginning
-            # of each segment
-            else:
+                # For section plot, only plot vertical lines at start and beginning
+                # of each segment
                 if startSegment == True:
                     ax.plot([p1[0], p4[0]], [p1[1], p4[1]],
                             linewidth=1, color=c)
@@ -370,10 +384,10 @@ class FrameElement2D(FrameElement):
                             linewidth=1, color=c)
                 ax.plot([p3[0], p4[0]], [p3[1], p4[1]], linewidth=1, color=c)
 
-                # ax.plot([p3[0], p4[0]], [p3[1], p4[1]], linewidth=1, color=c)
-            ax.add_patch(Polygon(
-                np.array([p1, p2, p3, p4]), facecolor=fc, linestyle='None', alpha=alpha
-            ))
+                ax.add_patch(Polygon(
+                    np.array([p1, p2, p3, p4]), facecolor=fc, linestyle='None', alpha=alpha
+                ))
+    
 
             if text_values == True:
                 # plot end text values of bending moment
@@ -397,6 +411,7 @@ class FrameElement2D(FrameElement):
                     mid = (p1 + p4) / 2
                     ax.text(mid[0], mid[1], "{:.3e}".format(
                         m1), size=8, verticalalignment='bottom')
+                        
 
     def plot_bending_stiffness(self, ax, fig, analysis_case, scalef, n, text_values=False, section=None, startSegment=False, endSegment=False):
         """Plots the axial force diagram from a static analysis defined by case_id. N.B. this
