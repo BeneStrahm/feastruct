@@ -398,6 +398,83 @@ class FrameElement2D(FrameElement):
                     ax.text(mid[0], mid[1], "{:.3e}".format(
                         m1), size=8, verticalalignment='bottom')
 
+    def plot_bending_stiffness(self, ax, fig, analysis_case, scalef, n, text_values=False, section=None, startSegment=False, endSegment=False):
+        """Plots the axial force diagram from a static analysis defined by case_id. N.B. this
+        method is adapted from the MATLAB code by F.P. van der Meer: plotMLine.m.
+
+        Cross section resistance can be plotted by providing the sections parameter.
+
+        :param ax: Axis object on which to draw the element
+        :type ax: :class:`matplotlib.axes.Axes`
+        :param fig: Figure object
+        :type fig: :class:`matplotlib
+        :param analysis_case: Analysis case
+        :type analysis_case: :class:`~feastruct.fea.cases.AnalysisCase`
+        :param float scalef: Factor by which to scale the bending moment diagram
+        :param int n: Number of points at which to plot the bending moment diagram
+        :param bool text_values:  Whether or not the values of the internal forces are displayed 
+        :param section: Element section with cross section resistance 'Mr', default is None
+        :type section: numpy.ndarray 
+        """
+
+        # get geometric properties
+        (node_coords, dx, l0, _) = self.get_geometric_properties()
+
+        # get bending moment diagram
+        ei_xx = self.get_ei()
+
+        # get end node coordinates
+        end1 = node_coords[0, 0:2]
+        end2 = node_coords[1, 0:2]
+
+        # location of node 1 and node 2
+        p1 = end1
+        p2 = end2
+
+        # location of the bending moment diagram end points
+        v = np.matmul(np.array([[0, -1], [1, 0]]),
+                      dx[0:2]) / l0  # direction vector
+        p3 = p2 + v * scalef * ei_xx
+        p4 = p1 + v * scalef * ei_xx
+
+        if section is None:
+            c = (0, 0, 0.7)
+            fc = (0.2, 0.4, 0.8)
+            alpha = 0.3
+
+        else:
+            c = (0, 0.7, 0)
+            fc = (0.2, 0.8, 0.4)
+            alpha = 0.1
+
+        # plot bending moment line and patch
+        if section is None:
+            ax.plot([p1[0], p4[0]], [p1[1], p4[1]], linewidth=1, color=c)
+            ax.plot([p3[0], p2[0]], [p3[1], p2[1]], linewidth=1, color=c)
+            ax.plot([p3[0], p4[0]], [p3[1], p4[1]], linewidth=1, color=c)
+
+        # For section plot, only plot vertical lines at start and beginning
+        # of each segment
+        else:
+            if startSegment == True:
+                ax.plot([p1[0], p4[0]], [p1[1], p4[1]],
+                        linewidth=1, color=c)
+            if endSegment == True:
+                ax.plot([p3[0], p2[0]], [p3[1], p2[1]],
+                        linewidth=1, color=c)
+            ax.plot([p3[0], p4[0]], [p3[1], p4[1]], linewidth=1, color=c)
+
+        # ax.plot([p3[0], p4[0]], [p3[1], p4[1]], linewidth=1, color=c)
+        ax.add_patch(Polygon(
+            np.array([p1, p2, p3, p4]), facecolor=fc, linestyle='None', alpha=alpha
+        ))
+
+        if text_values == True:
+            # plot end text values of bending moment
+            mid = (p1 + p4) / 2
+            ax.text(mid[0], mid[1], "{:.3e}".format(
+                ei_xx), size=8, verticalalignment='bottom')
+
 
 class Bar2D_2N(FrameElement2D):
     """Two noded, two dimensional bar element that can resist an axial force only. The element is
@@ -1270,6 +1347,22 @@ class EulerBernoulli2D_2N(FrameElement2D):
             bms[i] = bm
 
         return bms
+
+    def get_ei(self):
+        """Returns the bending stiffness EI_xx within the element.
+
+        :param analysis_case: Analysis case
+        :type analysis_case: :class:`~feastruct.fea.cases.AnalysisCase`
+
+        :returns: Bending stiffness EI_xx
+        :rtype: float
+        """
+
+        # extract relevant properties
+        E = self.material.elastic_modulus
+        ixx = self.section.ixx
+
+        return E * ixx
 
     def calculate_local_displacement(self, xi, u_el):
         """Calculates the local displacement of the element at position *xi* given the displacement

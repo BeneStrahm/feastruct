@@ -27,8 +27,7 @@ class PostProcessor2D:
         self.analysis = analysis
         self.n_subdiv = n_subdiv
 
-    def plot_geom(self, analysis_case, ax=None, fig=None, phi=None, axis=[False, False], supports=True, loads=True, undeformed=True,
-                  deformed=False, def_scale=1, dashed=False, showPlt=False):
+    def plot_geom(self, analysis_case, ax=None, fig=None, phi=None, axis=[False, False], supports=True, loads=True, undeformed=True, deformed=False, def_scale=1, dashed=False, showPlt=False):
         """Method used to plot the structural mesh in the undeformed and/or deformed state. If no
         axes object is provided, a new axes object is created. N.B. this method is adapted from the
         MATLAB code by F.P. van der Meer: plotGeom.m.
@@ -214,7 +213,7 @@ class PostProcessor2D:
         self.plot_geom(analysis_case=analysis_case, ax=ax, supports=False)
 
     def plot_decorator(func):
-        def wrapper(self, analysis_case, sections=None, ax=None, fig=None, axis=[False, False], phi=None, axial=False, shear=False, moment=False, text_values=True, scale=0.1, showPlt=False):
+        def wrapper(self, analysis_case, sections=None, ax=None, fig=None, axis=[False, False], phi=None, axial=False, shear=False, moment=False, bending_stiffness=False, text_values=True, scale=0.1, showPlt=False):
             if ax is None:
                 (fig, ax) = plt.subplots()
 
@@ -233,6 +232,7 @@ class PostProcessor2D:
             max_axial = 0
             max_shear = 0
             max_moment = 0
+            max_bending_stiffness = 0
 
             # loop throuh each element to get max forces
             for el in self.analysis.elements:
@@ -251,6 +251,10 @@ class PostProcessor2D:
                         n=self.n_subdiv, analysis_case=analysis_case)
                     max_moment = max(max_moment, max(
                         abs(min(bmd)), abs(max(bmd))))
+                if bending_stiffness:
+                    eid = el.get_ei()
+                    max_bending_stiffness = max(max_bending_stiffness,
+                                                abs(eid),)
 
             scale_axial = scale * \
                 max(xmax - xmin, ymax - ymin) / max(max_axial, 1e-8)
@@ -258,6 +262,9 @@ class PostProcessor2D:
                 max(xmax - xmin, ymax - ymin) / max(max_shear, 1e-8)
             scale_moment = scale * \
                 max(xmax - xmin, ymax - ymin) / max(max_moment, 1e-8)
+            scale_bending_stiffness = scale * \
+                max(xmax - xmin, ymax - ymin) / \
+                max(max_bending_stiffness, 1e-8)
 
             # loop throgh each element to plot the forces
             i = 0
@@ -299,6 +306,9 @@ class PostProcessor2D:
                 if moment:
                     el.plot_bending_moment(
                         ax=ax, fig=fig, analysis_case=analysis_case, scalef=scale_moment, n=self.n_subdiv, text_values=text_values, section=section, startSegment=startSegment, endSegment=endSegment)
+                if bending_stiffness:
+                    el.plot_bending_stiffness(
+                        ax=ax, fig=fig, analysis_case=analysis_case, scalef=scale_bending_stiffness, n=self.n_subdiv, text_values=text_values, section=section, startSegment=startSegment, endSegment=endSegment)
 
             # plot the undeformed structure
             ax, fig = self.plot_geom(analysis_case=analysis_case, phi=phi,
@@ -339,7 +349,7 @@ class PostProcessor2D:
         :param analysis_case: Analysis case
         :type analysis_case: :class:`~feastruct.fea.cases.AnalysisCase`
         :param sections: Element section vector with cross section resistance (on of the following: 'Vr', 'Mr')
-        :type sections: numpy.ndarray 
+        :type sections: numpy.ndarray
         :param ax: Axes object on which to plot
         :type ax: :class:`matplotlib.axes.Axes`
         :param fig: Figure object on which to plot
