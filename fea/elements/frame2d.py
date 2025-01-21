@@ -38,7 +38,7 @@ class FrameElement2D(FrameElement):
         # initialise parent FrameElement class
         super().__init__(nodes=nodes, material=material, efs=efs, section=section)
 
-    def plot_element(self, ax, linestyle='-', linewidth=2, marker='.'):
+    def plot_element(self, ax, linestyle='-', linewidth=3, marker='.'):
         """Plots the undeformed frame element on the axis defined by ax.
 
         :param ax: Axis object on which to draw the element
@@ -174,11 +174,11 @@ class FrameElement2D(FrameElement):
 
             # plot shear force line and patch
             ax.plot([p1[0], p4[0]], [p1[1], p4[1]],
-                    linewidth=1, color=(0.7, 0, 0))
+                    linewidth=2, color=(0.7, 0, 0))
             ax.plot([p3[0], p4[0]], [p3[1], p4[1]],
-                    linewidth=1, color=(0.7, 0, 0))
+                    linewidth=2, color=(0.7, 0, 0))
             ax.plot([p3[0], p2[0]], [p3[1], p2[1]],
-                    linewidth=1, color=(0.7, 0, 0))
+                    linewidth=2, color=(0.7, 0, 0))
             ax.add_patch(Polygon(
                 np.array([p1, p2, p3, p4]), facecolor=(1, 0, 0), linestyle='None', alpha=0.3
             ))
@@ -257,11 +257,11 @@ class FrameElement2D(FrameElement):
 
             # plot shear force line and patch
             ax.plot([p1[0], p4[0]], [p1[1], p4[1]],
-                    linewidth=1, color=(0, 0.3, 0))
+                    linewidth=2, color=(0, 0.3, 0))
             ax.plot([p3[0], p4[0]], [p3[1], p4[1]],
-                    linewidth=1, color=(0, 0.3, 0))
+                    linewidth=2, color=(0, 0.3, 0))
             ax.plot([p3[0], p2[0]], [p3[1], p2[1]],
-                    linewidth=1, color=(0, 0.3, 0))
+                    linewidth=2, color=(0, 0.3, 0))
             ax.add_patch(Polygon(
                 np.array([p1, p2, p3, p4]), facecolor=(0, 0.5, 0), linestyle='None', alpha=0.3
             ))
@@ -347,14 +347,14 @@ class FrameElement2D(FrameElement):
             p4 = p1 + v * scalef * m1
 
             if section is None:
-                c = (0, 0, 0.7)
-                fc = (0.2, 0.4, 0.8)
+                c = (1.0, 0, 0)
+                fc = (1.0, 0.5, 0.5)
                 alpha = 0.05
 
                 # Edge lines of each part is removed, only the bottom line is remained
-                # ax.plot([p1[0], p4[0]], [p1[1], p4[1]], linewidth=1, color=c)
-                # ax.plot([p3[0], p2[0]], [p3[1], p2[1]], linewidth=1, color=c)
-                ax.plot([p3[0], p4[0]], [p3[1], p4[1]], linewidth=1, color=c)
+                # ax.plot([p1[0], p4[0]], [p1[1], p4[1]], linewidth=2, color=c)
+                # ax.plot([p3[0], p2[0]], [p3[1], p2[1]], linewidth=2, color=c)
+                ax.plot([p3[0], p4[0]], [p3[1], p4[1]], linewidth=2, color=c)
                 ax.add_patch(Polygon(
                     np.array([p1, p2, p3, p4]), facecolor=fc, linestyle='None', alpha=alpha
                 ))
@@ -376,11 +376,11 @@ class FrameElement2D(FrameElement):
                 # of each segment
                 if startSegment == True:
                     ax.plot([p1[0], p4[0]], [p1[1], p4[1]],
-                            linewidth=1, color=c)
+                            linewidth=2, color=c)
                 if endSegment == True:
                     ax.plot([p3[0], p2[0]], [p3[1], p2[1]],
-                            linewidth=1, color=c)
-                ax.plot([p3[0], p4[0]], [p3[1], p4[1]], linewidth=1, color=c)
+                            linewidth=2, color=c)
+                ax.plot([p3[0], p4[0]], [p3[1], p4[1]], linewidth=2, color=c)
 
                 ax.add_patch(Polygon(
                     np.array([p1, p2, p3, p4]), facecolor=fc, linestyle='None', alpha=alpha
@@ -469,22 +469,22 @@ class FrameElement2D(FrameElement):
 
         # plot bending moment line and patch
         if section is None:
-            ax.plot([p1[0], p4[0]], [p1[1], p4[1]], linewidth=1, color=c)
-            ax.plot([p3[0], p2[0]], [p3[1], p2[1]], linewidth=1, color=c)
-            ax.plot([p3[0], p4[0]], [p3[1], p4[1]], linewidth=1, color=c)
+            ax.plot([p1[0], p4[0]], [p1[1], p4[1]], linewidth=2, color=c)
+            ax.plot([p3[0], p2[0]], [p3[1], p2[1]], linewidth=2, color=c)
+            ax.plot([p3[0], p4[0]], [p3[1], p4[1]], linewidth=2, color=c)
 
         # For section plot, only plot vertical lines at start and beginning
         # of each segment
         else:
             if startSegment == True:
                 ax.plot([p1[0], p4[0]], [p1[1], p4[1]],
-                        linewidth=1, color=c)
+                        linewidth=2, color=c)
             if endSegment == True:
                 ax.plot([p3[0], p2[0]], [p3[1], p2[1]],
-                        linewidth=1, color=c)
-            ax.plot([p3[0], p4[0]], [p3[1], p4[1]], linewidth=1, color=c)
+                        linewidth=2, color=c)
+            ax.plot([p3[0], p4[0]], [p3[1], p4[1]], linewidth=2, color=c)
 
-        # ax.plot([p3[0], p4[0]], [p3[1], p4[1]], linewidth=1, color=c)
+        # ax.plot([p3[0], p4[0]], [p3[1], p4[1]], linewidth=2, color=c)
         ax.add_patch(Polygon(
             np.array([p1, p2, p3, p4]), facecolor=fc, linestyle='None', alpha=alpha
         ))

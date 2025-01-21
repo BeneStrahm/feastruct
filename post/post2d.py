@@ -289,7 +289,10 @@ class PostProcessor2D:
             for n, el in enumerate(self.analysis.elements):
                 # Assign color of the first segment from assigned_colors
                 # using for bending moment plot:
-                assigned_color = self.get_color(i, psi, assigned_colors)
+                if assigned_colors is not None:
+                    assigned_color = self.get_color(i, psi, assigned_colors)
+                else:
+                    assigned_color = None
 
                 # Assign section to element, if sections are provided
                 if sections is not None:
@@ -330,7 +333,7 @@ class PostProcessor2D:
                         ax=ax, fig=fig, analysis_case=analysis_case, assigned_color=assigned_color, scalef=scale_moment, n=self.n_subdiv, text_values=text_values, section=section, startSegment=startSegment, endSegment=endSegment)
                 if bending_stiffness:
                     el.plot_bending_stiffness(
-                        ax=ax, fig=fig, analysis_case=analysis_case, scalef=scale_bending_stiffness, n=self.n_subdiv, text_values=text_values, section=section, startSegment=startSegment, endSegment=endSegment)
+                        ax=ax, fig=fig, analysis_case=analysis_case, assigned_color=assigned_color, scalef=scale_bending_stiffness, n=self.n_subdiv, text_values=text_values, section=section, startSegment=startSegment, endSegment=endSegment)
 
             # plot the undeformed structure
             ax, fig = self.plot_geom(analysis_case=analysis_case, phi=phi,

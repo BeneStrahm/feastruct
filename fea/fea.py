@@ -334,7 +334,8 @@ class FiniteElement:
 
         # if nothing is found
         str = 'Force vector corresponding to element {0}'.format(self)
-        str += ' could not be found for analysis case {0}'.format(analysis_case)
+        str += ' could not be found for analysis case {0}'.format(
+            analysis_case)
         raise Exception(str)
 
     def save_fint(self, f, analysis_case):
