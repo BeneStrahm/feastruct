@@ -84,6 +84,7 @@ class NodalSupport(BoundaryCondition):
 
         # modify stiffness matrix and f_ext
         K[gdof, :] = 0
+        K[:, gdof] = 0
         K[gdof, gdof] = 1
         f_ext[gdof] = self.val
 
@@ -116,7 +117,8 @@ class NodalSupport(BoundaryCondition):
                 return
 
         # if there isn't already a reaction for the current analysis_case
-        self.reactions.append(ScalarResult(result=f, analysis_case=analysis_case))
+        self.reactions.append(ScalarResult(
+            result=f, analysis_case=analysis_case))
 
     def plot_support(self, ax, small, get_support_angle, analysis_case, deformed, def_scale):
         """Plots a graphical representation of the nodal support.
@@ -224,7 +226,8 @@ class NodalSupport(BoundaryCondition):
                 rot_rect[1, :] += self.node.y
 
             ax.plot(rot_line[0, :], rot_line[1, :], 'k-', linewidth=1)
-            ax.add_patch(Polygon(np.transpose(rot_rect), facecolor=(0.7, 0.7, 0.7), edgecolor=ec))
+            ax.add_patch(Polygon(np.transpose(rot_rect),
+                         facecolor=(0.7, 0.7, 0.7), edgecolor=ec))
 
     def plot_imposed_disp(self, ax, max_disp, small, get_support_angle, analysis_case, deformed,
                           def_scale):
@@ -291,7 +294,8 @@ class NodalSupport(BoundaryCondition):
             rl[1, :] += self.node.y
 
         ax.plot(rl[0, :], rl[1, :], 'k-')
-        ax.add_patch(Polygon(np.transpose(rp), facecolor='none', linewidth=1, edgecolor='k'))
+        ax.add_patch(Polygon(np.transpose(rp), facecolor='none',
+                     linewidth=1, edgecolor='k'))
 
     def plot_imposed_rot(self, ax, small, get_support_angle, analysis_case, deformed, def_scale):
         """Plots a graphical representation of an imposed rotation.
@@ -322,9 +326,12 @@ class NodalSupport(BoundaryCondition):
 
         # make arrow tail around (0,0)
         rr = (r1 + r2) / 2
-        ll = np.array([rr * np.cos(ths * np.pi / 180), rr * np.sin(ths * np.pi / 180)])
-        l1 = np.array([r1 * np.cos(ths * np.pi / 180), r1 * np.sin(ths * np.pi / 180)])
-        l2 = np.array([r2 * np.cos(ths * np.pi / 180), r2 * np.sin(ths * np.pi / 180)])
+        ll = np.array([rr * np.cos(ths * np.pi / 180),
+                      rr * np.sin(ths * np.pi / 180)])
+        l1 = np.array([r1 * np.cos(ths * np.pi / 180),
+                      r1 * np.sin(ths * np.pi / 180)])
+        l2 = np.array([r2 * np.cos(ths * np.pi / 180),
+                      r2 * np.sin(ths * np.pi / 180)])
 
         # make arrow head at (0,0)
         pp = np.array([[-lh, -lh, 0], [-wh / 2, wh / 2, 0]])
@@ -383,7 +390,8 @@ class NodalSupport(BoundaryCondition):
         ax.plot(rl2[0, :], rl2[1, :], 'k-')
         ax.plot(np.append(rl1[0, ibase], rl2[0, ibase]), np.append(rl1[1, ibase], rl2[1, ibase]),
                 'k-')
-        ax.add_patch(Polygon(np.transpose(rp), facecolor='none', linewidth=1, edgecolor='k'))
+        ax.add_patch(Polygon(np.transpose(rp), facecolor='none',
+                     linewidth=1, edgecolor='k'))
 
     def plot_reaction(self, ax, max_reaction, small, get_support_angle, analysis_case):
         """Plots a graphical representation of a reaction force and displays the value of the
@@ -564,9 +572,11 @@ class NodalSupport(BoundaryCondition):
             rot_rect = np.matmul(rot_mat, rect)
             rot_rect[0, :] += x
             rot_rect[1, :] += y
-            ax.add_patch(Polygon(np.transpose(rot_rect), facecolor=(0.7, 0.7, 0.7)))
+            ax.add_patch(Polygon(np.transpose(rot_rect),
+                         facecolor=(0.7, 0.7, 0.7)))
 
-        ax.plot(rot_triangle[0, :] + x, rot_triangle[1, :] + y, 'k-', linewidth=1)
+        ax.plot(rot_triangle[0, :] + x,
+                rot_triangle[1, :] + y, 'k-', linewidth=1)
 
         if hinge:
             ax.plot(x, y, 'ko', markerfacecolor='w', linewidth=1, markersize=4)
@@ -692,7 +702,8 @@ class NodalLoad(BoundaryCondition):
             rot_mat = np.array([[c, -s], [s, c]])
 
             # make arrow tail around (0,0)
-            ll = np.array([rr * np.cos(ths * np.pi / 180), rr * np.sin(ths * np.pi / 180)])
+            ll = np.array([rr * np.cos(ths * np.pi / 180),
+                          rr * np.sin(ths * np.pi / 180)])
 
             # make arrow head at (0,0)
             pp = np.array([[-lh, -lh, 0], [-wh / 2, wh / 2, 0]])
