@@ -27,7 +27,7 @@ class PostProcessor2D:
         self.analysis = analysis
         self.n_subdiv = n_subdiv
 
-    def plot_geom(self, analysis_case, ax=None, fig=None, phi=None, axis=[False, False], supports=True, loads=True, undeformed=True, deformed=False, def_scale=1, dashed=False, showPlt=False):
+    def plot_geom(self, analysis_case, ax=None, fig=None, phi=None, max_beam_len=None, axis=[False, False], supports=True, loads=True, undeformed=True, deformed=False, def_scale=1, dashed=False, showPlt=False):
         """Method used to plot the structural mesh in the undeformed and/or deformed state. If no
         axes object is provided, a new axes object is created. N.B. this method is adapted from the
         MATLAB code by F.P. van der Meer: plotGeom.m.
@@ -94,7 +94,12 @@ class PostProcessor2D:
                     el.plot_element(ax=ax)
 
         # set initial plot limits
-        (xmin, xmax, ymin, ymax, _, _) = self.analysis.get_node_lims()
+        if max_beam_len is not None:
+            xmax = max_beam_len
+            (xmin, _, ymin, ymax, _, _) = self.analysis.get_node_lims()
+        else:
+            (xmin, xmax, ymin, ymax, _, _) = self.analysis.get_node_lims()
+        
         ax.set_xlim(xmin-1e-12, xmax)
         ax.set_ylim(ymin-1e-12, ymax)
 
@@ -160,9 +165,11 @@ class PostProcessor2D:
                     deformed=deformed, def_scale=def_scale)
 
         # plot layout
-        plt.axis('tight')
-        ax.set_xlim(self.wide_lim(ax.get_xlim()))
-        ax.set_ylim(self.wide_lim(ax.get_ylim()))
+        # plt.axis('tight')
+        ax.set_xlim(self.wide_lim([xmin, xmax]))
+        ax.set_ylim(self.wide_lim([ymin, ymax]))
+        # ax.set_xlim(self.wide_lim(ax.get_xlim()))
+        # ax.set_ylim(self.wide_lim(ax.get_ylim()))
 
         limratio = np.diff(ax.get_ylim())/np.diff(ax.get_xlim())
 
@@ -175,6 +182,17 @@ class PostProcessor2D:
 
         ax.set_aspect(1)
         plt.box(on=None)
+
+        # # center the plot in the figure
+        # if fig is not None:
+        #     fig.canvas.draw()  # Ensure all artists are drawn first
+        #     # Get the current axes position in figure coordinates
+        #     ax_pos = ax.get_position()
+        #     # Calculate centered position
+        #     new_width = ax_pos.width
+        #     new_left = (1 - new_width) / 2  # Center horizontally
+        #     # Set new position (keeping vertical position unchanged)
+        #     ax.set_position([new_left, ax_pos.y0, new_width, ax_pos.height])
 
         if showPlt == True:
             plt.show()
@@ -212,26 +230,35 @@ class PostProcessor2D:
         # plot the undeformed structure
         self.plot_geom(analysis_case=analysis_case, ax=ax, supports=False)
 
-    def get_color(self, index_segment, psi, assigned_colors):
+
+    def get_color(self, el_index, phi, assigned_colors):
         """
-        This is a helper function for "plot_decorator" to get the color
-        of the segment from the list of assigned_colors.
-        This is used for the bending moment plot, when sections is not None.
-
-        Return:
-        assinged color of the segment.
-
+        Get the color of an element based on its segment assignment.
+        
+        Args:
+            el_index (int): Index of the element (0-based)
+            phi (ndarray): 2D segment-element assignment matrix (n_segments × n_elements)
+                        where phi[seg_idx, el_idx] = 1 if element belongs to segment
+            assigned_colors (list): 1D list of colors for each segment (length = n_segments)
+                                Values are None or RGBA tuples
+        
+        Returns:
+            tuple/None: Color of the element's segment, or None if unassigned
         """
-        row_psi = psi[index_segment]
-        row_psi = row_psi.tolist()
-        for i_item, v_item in enumerate(row_psi):
-            if v_item == 1:
-                section_index = i_item
-
-        return assigned_colors[section_index]
+        import numpy as np
+        
+        # Find which segment this element belongs to
+        segment_assignment = phi[:, el_index]  # Get all possible segment assignments for this element
+        segment_idx = np.argmax(segment_assignment)  # Returns index of first maximum (works for binary 0/1)
+        
+        if segment_assignment[segment_idx] == 1:  # Verify it's actually assigned (not all zeros)
+            return assigned_colors[segment_idx]
+        else:
+            return None  # Element isn't assigned to any segment
+    
 
     def plot_decorator(func):
-        def wrapper(self, analysis_case, sections=None, ax=None, fig=None, axis=[False, False], phi=None, psi=None, assigned_colors=None, axial=False, shear=False, moment=False, bending_stiffness=False, text_values=True, scale=0.1, showPlt=False):
+        def wrapper(self, analysis_case, sections=None, ax=None, fig=None, axis=[False, False], phi=None, psi=None, max_beam_len=None, assigned_colors=None, max_forces=None, axial=False, shear=False, moment=False, bending_stiffness=False, text_values=True, scale=0.1, showPlt=False):
             if ax is None:
                 (fig, ax) = plt.subplots()
 
@@ -244,7 +271,12 @@ class PostProcessor2D:
             ax.get_yaxis().set_visible(axis[1])
 
             # get size of structure
-            (xmin, xmax, ymin, ymax, _, _) = self.analysis.get_node_lims()
+            if max_beam_len is not None:
+                xmax = max_beam_len
+                (xmin, _, ymin, ymax, _, _) = self.analysis.get_node_lims()
+            else:
+                pass
+                # (xmin, xmax, ymin, ymax, _, _) = self.analysis.get_node_lims()
 
             # determine maximum forces
             max_axial = 0
@@ -252,27 +284,36 @@ class PostProcessor2D:
             max_moment = 0
             max_bending_stiffness = 0
 
+            # Use max_forces to determine the maximum forces of all systems, to have one scale for all
+            if max_forces is not None:
+                max_axial = max_forces['axial']
+                max_shear = max_forces['shear']
+                max_moment = max_forces['moment']
+                max_bending_stiffness = max_forces['bending_stiffness']
+
             # loop throuh each element to get max forces
-            for el in self.analysis.elements:
-                if axial:
-                    (_, afd) = el.get_afd(
-                        n=self.n_subdiv, analysis_case=analysis_case)
-                    max_axial = max(max_axial, max(
-                        abs(min(afd)), abs(max(afd))))
-                if shear:
-                    (_, sfd) = el.get_sfd(
-                        n=self.n_subdiv, analysis_case=analysis_case)
-                    max_shear = max(max_shear, max(
-                        abs(min(sfd)), abs(max(sfd))))
-                if moment:
-                    (_, bmd) = el.get_bmd(
-                        n=self.n_subdiv, analysis_case=analysis_case)
-                    max_moment = max(max_moment, max(
-                        abs(min(bmd)), abs(max(bmd))))
-                if bending_stiffness:
-                    eid = el.get_ei()
-                    max_bending_stiffness = max(max_bending_stiffness,
-                                                abs(eid),)
+            # for el in self.analysis.elements:
+            #     if axial:
+            #         (_, afd) = el.get_afd(
+            #             n=self.n_subdiv, analysis_case=analysis_case)
+            #         max_axial = max(max_axial, max(
+            #             abs(min(afd)), abs(max(afd))))
+            #     if shear:
+            #         (_, sfd) = el.get_sfd(
+            #             n=self.n_subdiv, analysis_case=analysis_case)
+            #         max_shear = max(max_shear, max(
+            #             abs(min(sfd)), abs(max(sfd))))
+            #     if moment:
+            #         (_, bmd) = el.get_bmd(
+            #             n=self.n_subdiv, analysis_case=analysis_case)
+            #         max_moment = max(max_moment, max(
+            #             abs(min(bmd)), abs(max(bmd))))
+            #     if bending_stiffness:
+            #         eid = el.get_ei()
+            #         max_bending_stiffness = max(max_bending_stiffness,
+            #                                     abs(eid),)
+
+
 
             scale_axial = scale * \
                 max(xmax - xmin, ymax - ymin) / max(max_axial, 1e-8)
@@ -290,7 +331,7 @@ class PostProcessor2D:
                 # Assign color of the first segment from assigned_colors
                 # using for bending moment plot:
                 if assigned_colors is not None:
-                    assigned_color = self.get_color(i, psi, assigned_colors)
+                    assigned_color = self.get_color(n, phi, assigned_colors)
                 else:
                     assigned_color = None
 
@@ -336,7 +377,7 @@ class PostProcessor2D:
                         ax=ax, fig=fig, analysis_case=analysis_case, assigned_color=assigned_color, scalef=scale_bending_stiffness, n=self.n_subdiv, text_values=text_values, section=section, startSegment=startSegment, endSegment=endSegment)
 
             # plot the undeformed structure
-            ax, fig = self.plot_geom(analysis_case=analysis_case, phi=phi,
+            ax, fig = self.plot_geom(analysis_case=analysis_case, phi=phi, max_beam_len=max_beam_len,
                                      ax=ax, fig=fig, axis=axis, loads=False, showPlt=showPlt)
 
             return ax, fig
@@ -344,7 +385,7 @@ class PostProcessor2D:
         return wrapper
 
     @plot_decorator
-    def plot_frame_forces(self, analysis_case, ax=None, fig=None, axis=[False, False], phi=None, axial=False, shear=False, moment=False, text_values=True, scale=0.1, showPlt=False):
+    def plot_frame_forces(self, analysis_case, ax=None, fig=None, axis=[False, False], phi=None, max_beam_len=None, max_forces=None, axial=False, shear=False, moment=False, text_values=True, scale=0.1, showPlt=False):
         """Method used to plot internal frame actions resulting from the analysis case.
 
         :param analysis_case: Analysis case
@@ -368,7 +409,7 @@ class PostProcessor2D:
         pass
 
     @plot_decorator
-    def plot_frame_sections(self, analysis_case, sections, ax=None, fig=None, axis=[False, False], phi=None, axial=False, shear=False, moment=False, text_values=True, scale=0.1, showPlt=False):
+    def plot_frame_sections(self, analysis_case, sections, ax=None, fig=None, axis=[False, False], phi=None, max_beam_len=None, max_forces=None, axial=False, shear=False, moment=False, text_values=True, scale=0.1, showPlt=False):
         """Method used to plot frame sections resulting the element to section mapping.
 
         :param analysis_case: Analysis case
