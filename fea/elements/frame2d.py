@@ -38,7 +38,7 @@ class FrameElement2D(FrameElement):
         # initialise parent FrameElement class
         super().__init__(nodes=nodes, material=material, efs=efs, section=section)
 
-    def plot_element(self, ax, linestyle='-', linewidth=3, marker='.'):
+    def plot_element(self, ax, linestyle='-', linewidth=.7, marker='.'):
         """Plots the undeformed frame element on the axis defined by ax.
 
         :param ax: Axis object on which to draw the element
@@ -51,7 +51,7 @@ class FrameElement2D(FrameElement):
         coords = self.get_node_coords()
 
         ax.plot(coords[:, 0], coords[:, 1], color='k', linestyle=linestyle,
-                linewidth=linewidth, marker=marker, markersize=8, markeredgecolor='grey', markerfacecolor='grey')
+                linewidth=linewidth, marker=marker, markersize=2.5, markeredgecolor='grey', markerfacecolor='grey')
 
     def plot_deformed_element(self, ax, analysis_case, n, def_scale, u_el=None):
         """Plots a 2D frame element in its deformed configuration for the displacement vector
@@ -127,10 +127,10 @@ class FrameElement2D(FrameElement):
             ax.plot([x[i], x[i+1]], [y[i], y[i+1]], 'k-', linewidth=2)
 
         # plot end markers
-        ax.plot(x[0], y[0], 'k.', markersize=8)
-        ax.plot(x[-1], y[-1], 'k.', markersize=8)
+        ax.plot(x[0], y[0], 'k.', markersize=3)
+        ax.plot(x[-1], y[-1], 'k.', markersize=3)
 
-    def plot_axial_force(self, ax, analysis_case, scalef, n, text_values=False):
+    def plot_axial_force(self, ax, analysis_case, scalef, n, linewidth=.5, text_values=False):
         """Plots the axial force diagram from a static analysis defined by case_id. N.B. this
         method is adapted from the MATLAB code by F.P. van der Meer: plotNLine.m.
 
@@ -174,11 +174,11 @@ class FrameElement2D(FrameElement):
 
             # plot shear force line and patch
             ax.plot([p1[0], p4[0]], [p1[1], p4[1]],
-                    linewidth=2, color=(0.7, 0, 0))
+                    linewidth=linewidth, color=(0.7, 0, 0))
             ax.plot([p3[0], p4[0]], [p3[1], p4[1]],
-                    linewidth=2, color=(0.7, 0, 0))
+                    linewidth=linewidth, color=(0.7, 0, 0))
             ax.plot([p3[0], p2[0]], [p3[1], p2[1]],
-                    linewidth=2, color=(0.7, 0, 0))
+                    linewidth=linewidth, color=(0.7, 0, 0))
             ax.add_patch(Polygon(
                 np.array([p1, p2, p3, p4]), facecolor=(1, 0, 0), linestyle='None', alpha=0.3
             ))
@@ -206,7 +206,10 @@ class FrameElement2D(FrameElement):
                     ax.text(mid[0], mid[1], "{:.3e}".format(
                         n1), size=8, verticalalignment='bottom')
 
-    def plot_shear_force(self, ax, fig, analysis_case, scalef, n, text_values=False, section=None):
+        # Add scale factor as label
+        ax.set_ylabel('{:.10e}'.format(scalef))
+
+    def plot_shear_force(self, ax, fig, analysis_case, scalef, n, linewidth=.5, text_values=False, section=None):
         """Plots the axial force diagram from a static analysis defined by case_id. N.B. this
         method is adapted from the MATLAB code by F.P. van der Meer: plotVLine.m.
 
@@ -257,11 +260,11 @@ class FrameElement2D(FrameElement):
 
             # plot shear force line and patch
             ax.plot([p1[0], p4[0]], [p1[1], p4[1]],
-                    linewidth=2, color=(0, 0.3, 0))
+                    linewidth=linewidth, color=(0, 0.3, 0))
             ax.plot([p3[0], p4[0]], [p3[1], p4[1]],
-                    linewidth=2, color=(0, 0.3, 0))
+                    linewidth=linewidth, color=(0, 0.3, 0))
             ax.plot([p3[0], p2[0]], [p3[1], p2[1]],
-                    linewidth=2, color=(0, 0.3, 0))
+                    linewidth=linewidth, color=(0, 0.3, 0))
             ax.add_patch(Polygon(
                 np.array([p1, p2, p3, p4]), facecolor=(0, 0.5, 0), linestyle='None', alpha=0.3
             ))
@@ -289,7 +292,10 @@ class FrameElement2D(FrameElement):
                     ax.text(mid[0], mid[1], "{:.3e}".format(
                         v1), size=8, verticalalignment='bottom')
 
-    def plot_bending_moment(self, ax, fig, analysis_case, scalef, n, assigned_color=None, text_values=False, section=None, startSegment=False, endSegment=False):
+        # Add scale factor as label
+        ax.set_ylabel('{:.10e}'.format(scalef))
+
+    def plot_bending_moment(self, ax, fig, analysis_case, scalef, n, linewidth=.5, assigned_color=None, text_values=False, section=None, startSegment=False, endSegment=False):
         """
         Plots the axial force diagram from a static analysis defined by case_id. N.B. this
         method is adapted from the MATLAB code by F.P. van der Meer: plotMLine.m.
@@ -354,7 +360,8 @@ class FrameElement2D(FrameElement):
                 # Edge lines of each part is removed, only the bottom line is remained
                 # ax.plot([p1[0], p4[0]], [p1[1], p4[1]], linewidth=2, color=c)
                 # ax.plot([p3[0], p2[0]], [p3[1], p2[1]], linewidth=2, color=c)
-                ax.plot([p3[0], p4[0]], [p3[1], p4[1]], linewidth=2, color=c)
+                ax.plot([p3[0], p4[0]], [p3[1], p4[1]],
+                        linewidth=linewidth, color=c)
                 ax.add_patch(Polygon(
                     np.array([p1, p2, p3, p4]), facecolor=fc, linestyle='None', alpha=alpha
                 ))
@@ -376,11 +383,12 @@ class FrameElement2D(FrameElement):
                 # of each segment
                 if startSegment == True:
                     ax.plot([p1[0], p4[0]], [p1[1], p4[1]],
-                            linewidth=2, color=c)
+                            linewidth=linewidth*.7/.5, color=c)
                 if endSegment == True:
                     ax.plot([p3[0], p2[0]], [p3[1], p2[1]],
-                            linewidth=2, color=c)
-                ax.plot([p3[0], p4[0]], [p3[1], p4[1]], linewidth=2, color=c)
+                            linewidth=linewidth*.7/.5, color=c)
+                ax.plot([p3[0], p4[0]], [p3[1], p4[1]],
+                        linewidth=linewidth*.7/.5, color=c)
 
                 ax.add_patch(Polygon(
                     np.array([p1, p2, p3, p4]), facecolor=fc, linestyle='None', alpha=alpha
@@ -409,7 +417,10 @@ class FrameElement2D(FrameElement):
                     ax.text(mid[0], mid[1], "{:.3e}".format(
                         m1), size=8, verticalalignment='bottom')
 
-    def plot_bending_stiffness(self, ax, fig, analysis_case, scalef, n, assigned_color=None, text_values=False, section=None, startSegment=False, endSegment=False):
+        # Add scale factor as label
+        ax.set_ylabel('{:.10e}'.format(scalef))
+
+    def plot_bending_stiffness(self, ax, fig, analysis_case, scalef, n, linewidth=.7, assigned_color=None, text_values=False, section=None, startSegment=False, endSegment=False):
         """Plots the axial force diagram from a static analysis defined by case_id. N.B. this
         method is adapted from the MATLAB code by F.P. van der Meer: plotMLine.m.
 
@@ -469,20 +480,24 @@ class FrameElement2D(FrameElement):
 
         # plot bending moment line and patch
         if section is None:
-            ax.plot([p1[0], p4[0]], [p1[1], p4[1]], linewidth=2, color=c)
-            ax.plot([p3[0], p2[0]], [p3[1], p2[1]], linewidth=2, color=c)
-            ax.plot([p3[0], p4[0]], [p3[1], p4[1]], linewidth=2, color=c)
+            ax.plot([p1[0], p4[0]], [p1[1], p4[1]],
+                    linewidth=linewidth, color=c)
+            ax.plot([p3[0], p2[0]], [p3[1], p2[1]],
+                    linewidth=linewidth, color=c)
+            ax.plot([p3[0], p4[0]], [p3[1], p4[1]],
+                    linewidth=linewidth, color=c)
 
         # For section plot, only plot vertical lines at start and beginning
         # of each segment
         else:
             if startSegment == True:
                 ax.plot([p1[0], p4[0]], [p1[1], p4[1]],
-                        linewidth=2, color=c)
+                        linewidth=linewidth*.7/.5, color=c)
             if endSegment == True:
                 ax.plot([p3[0], p2[0]], [p3[1], p2[1]],
-                        linewidth=2, color=c)
-            ax.plot([p3[0], p4[0]], [p3[1], p4[1]], linewidth=2, color=c)
+                        linewidth=linewidth*.7/.5, color=c)
+            ax.plot([p3[0], p4[0]], [p3[1], p4[1]],
+                    linewidth=linewidth*.7/.5, color=c)
 
         # ax.plot([p3[0], p4[0]], [p3[1], p4[1]], linewidth=2, color=c)
         ax.add_patch(Polygon(
@@ -494,6 +509,9 @@ class FrameElement2D(FrameElement):
             mid = (p1 + p4) / 2
             ax.text(mid[0], mid[1], "{:.3e}".format(
                 ei_xx), size=8, verticalalignment='bottom')
+
+        # Add scale factor as label
+        ax.set_ylabel('{:.10e}'.format(scalef))
 
 
 class Bar2D_2N(FrameElement2D):

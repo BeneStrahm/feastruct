@@ -225,7 +225,7 @@ class NodalSupport(BoundaryCondition):
                 rot_rect[0, :] += self.node.x
                 rot_rect[1, :] += self.node.y
 
-            ax.plot(rot_line[0, :], rot_line[1, :], 'k-', linewidth=1)
+            ax.plot(rot_line[0, :], rot_line[1, :], 'k-', linewidth=.3)
             ax.add_patch(Polygon(np.transpose(rot_rect),
                          facecolor=(0.7, 0.7, 0.7), edgecolor=ec))
 
@@ -566,7 +566,7 @@ class NodalSupport(BoundaryCondition):
         if roller:
             line = np.array([[-1.1, -1.1], [-1, 1]]) * dx
             rot_line = np.matmul(rot_mat, line)
-            ax.plot(rot_line[0, :] + x, rot_line[1, :] + y, 'k-', linewidth=1)
+            ax.plot(rot_line[0, :] + x, rot_line[1, :] + y, 'k-', linewidth=.3)
         else:
             rect = np.array([[-1.4, -1.4, -h, -h], [-1, 1, 1, -1]]) * dx
             rot_rect = np.matmul(rot_mat, rect)
@@ -576,10 +576,11 @@ class NodalSupport(BoundaryCondition):
                          facecolor=(0.7, 0.7, 0.7)))
 
         ax.plot(rot_triangle[0, :] + x,
-                rot_triangle[1, :] + y, 'k-', linewidth=1)
+                rot_triangle[1, :] + y, 'k-', linewidth=.3)
 
         if hinge:
-            ax.plot(x, y, 'ko', markerfacecolor='w', linewidth=1, markersize=4)
+            ax.plot(x, y, 'ko', markerfacecolor='w',
+                    linewidth=.3, markersize=2, zorder=100)
 
 
 class NodalLoad(BoundaryCondition):
