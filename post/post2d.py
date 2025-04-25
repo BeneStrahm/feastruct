@@ -101,7 +101,7 @@ class PostProcessor2D:
             (xmin, xmax, ymin, ymax, _, _) = self.analysis.get_node_lims()
         
         ax.set_xlim(xmin-1e-12, xmax)
-        ax.set_ylim(ymin-1e-12, ymax)
+        ax.set_ylim(ymin-1e-10, ymax)
 
         if axis[0] == True:
             # Setup ticks to be at every 2nd element
@@ -134,7 +134,7 @@ class PostProcessor2D:
             # plot supports
             for support in node_supports:
                 support.plot_support(
-                    ax=ax, small=small * 2.0, get_support_angle=self.get_support_angle,
+                    ax=ax, small=small, get_support_angle=self.get_support_angle,
                     analysis_case=analysis_case, deformed=deformed, def_scale=def_scale)
 
             # plot imposed displacements
