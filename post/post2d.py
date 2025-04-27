@@ -341,10 +341,10 @@ class PostProcessor2D:
 
                 if axial:
                     el.plot_axial_force(
-                        ax=ax, fig=fig, analysis_case=analysis_case, opt_results=opt_results, scalef=scale_axial, idx=n, n_subdiv=self.n_subdiv, text_values=text_values, section=section)
+                        ax=ax, fig=fig, analysis_case=analysis_case, opt_results=opt_results, scalef=scale_axial, idx=n, n_subdiv=self.n_subdiv, text_values=text_values,)
                 if shear:
                     el.plot_shear_force(
-                        ax=ax, fig=fig, analysis_case=analysis_case, opt_results=opt_results, scalef=scale_shear, idx=n, n_subdiv=self.n_subdiv, text_values=text_values, section=section)
+                        ax=ax, fig=fig, analysis_case=analysis_case, opt_results=opt_results, scalef=scale_shear, idx=n, n_subdiv=self.n_subdiv, text_values=text_values,)
                 if moment:
                     el.plot_bending_moment(
                         ax=ax, fig=fig, analysis_case=analysis_case, opt_results=opt_results, scalef=scale_moment, idx=n, n_subdiv=self.n_subdiv, text_values=text_values, startSegment=startSegment, endSegment=endSegment, midSegment=midSegment, midSegmentEven=midSegmentEven)
