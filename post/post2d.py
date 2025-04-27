@@ -27,7 +27,7 @@ class PostProcessor2D:
         self.analysis = analysis
         self.n_subdiv = n_subdiv
 
-    def plot_geom(self, analysis_case, ax=None, fig=None, phi=None, max_beam_len=None, axis=[False, False], supports=True, loads=True, undeformed=True, deformed=False, def_scale=1, dashed=False, showPlt=False, style_dict={}):
+    def plot_geom(self, analysis_case, ax=None, fig=None, axis=[False, False], opt_results=None, supports=True, loads=True, undeformed=True, deformed=False, def_scale=1, dashed=False, showPlt=False, style_dict={}):
         """Method used to plot the structural mesh in the undeformed and/or deformed state. If no
         axes object is provided, a new axes object is created. N.B. this method is adapted from the
         MATLAB code by F.P. van der Meer: plotGeom.m.
@@ -38,9 +38,9 @@ class PostProcessor2D:
         :type ax: :class:`matplotlib.axes.Axes`
         :param fig: Figure object on which to plot
         :type fig: :class:`matplotlib
-        :param phi: Element to section mapping matrix
-        :type phi: numpy.ndarray
         :param [bool, bool] axis: list with bools whether or not the [x / y] axis is plotted
+        :param opt_results: The results of the optimization. Defaults to None.
+        :type opt_results: :class:`~designforreuse.opt.results.Results`
         :param bool supports: Whether or not the freedom case supports are rendered
         :param bool loads: Whether or not the load case loads are rendered
         :param bool undeformed: Whether or not the undeformed structure is plotted
@@ -55,13 +55,10 @@ class PostProcessor2D:
             (fig, ax) = plt.subplots()
 
         # Load / apply mpl style
-        from feastruct.post import mplStyle
+        from pyLEK.plotters.plotStyle import mplStyle
 
         # Find plot styles
         mplPath = mplStyle.findPlotStyle('feastruct')
-
-        # Modify plot styles
-        mplStyle.modifyPlotStyle(style_dict, mplPath)
 
         # Get the plot styles
         mplStyle.retrievePlotStyle(style_dict, mplPath)
@@ -74,22 +71,18 @@ class PostProcessor2D:
         ax.get_xaxis().set_visible(axis[0])
         ax.get_yaxis().set_visible(axis[1])
 
-        if phi is not None:
-            for i in range(phi.shape[0]):
-                # Check if element in segment i
-                if np.sum(phi[i, :]) > 0:
-                    # find smallest index of non-zero value
-                    i_start = np.min(np.nonzero(phi[i, :]))
+        # Add segment markers
+        if opt_results is not None:
+            phi = opt_results.phi[:, :, opt_results.k]
+            for i, row in enumerate(phi):
+                if np.any(row):
+                    # Find the nodes at the start and end of the segment
+                    i_start, i_end = np.nonzero(row)[0][[0, -1]]
+                    start, end = self.analysis.elements[i_start].nodes[0], self.analysis.elements[i_end].nodes[1]
 
-                    # find max. index of non-zero value
-                    i_end = np.max(np.nonzero(phi[i, :]))
-
-                    # plot the segment
-                    coord_start = self.analysis.elements[i_start].nodes[0]
-                    coord_end = self.analysis.elements[i_end].nodes[1]
-
-                    ax.plot([coord_start.x, coord_end.x], [coord_start.y, coord_end.y], linestyle='-',
-                            linewidth=0, marker='|', markersize=5, markeredgewidth=.7, color='k')
+                    # Plot the segment marker
+                    ax.plot([start.x, end.x], [start.y, end.y], linestyle='-', marker='|', markersize=5,
+                            markeredgewidth=0.7, color='k', linewidth=0)
 
         for el in self.analysis.elements:
             if deformed:
@@ -106,8 +99,8 @@ class PostProcessor2D:
                     el.plot_element(ax=ax)
 
          # set initial plot limits
-        if max_beam_len is not None:
-            xmax = max_beam_len
+        if opt_results is not None:
+            xmax = max(opt_results.L)
             (xmin, _, ymin, ymax, _, _) = self.analysis.get_node_lims()
         else:
             (xmin, xmax, ymin, ymax, _, _) = self.analysis.get_node_lims()
@@ -241,36 +234,8 @@ class PostProcessor2D:
         # plot the undeformed structure
         self.plot_geom(analysis_case=analysis_case, ax=ax, supports=False)
 
-    def get_color(self, el_index, phi, assigned_colors):
-        """
-        Get the color of an element based on its segment assignment.
-
-        Args:
-            el_index (int): Index of the element (0-based)
-            phi (ndarray): 2D segment-element assignment matrix (n_segments × n_elements)
-                        where phi[seg_idx, el_idx] = 1 if element belongs to segment
-            assigned_colors (list): 1D list of colors for each segment (length = n_segments)
-                                Values are None or RGBA tuples
-
-        Returns:
-            tuple/None: Color of the element's segment, or None if unassigned
-        """
-        import numpy as np
-
-        # Find which segment this element belongs to
-        # Get all possible segment assignments for this element
-        segment_assignment = phi[:, el_index]
-        # Returns index of first maximum (works for binary 0/1)
-        segment_idx = np.argmax(segment_assignment)
-
-        # Verify it's actually assigned (not all zeros)
-        if segment_assignment[segment_idx] == 1:
-            return assigned_colors[segment_idx]
-        else:
-            return None  # Element isn't assigned to any segment
-
     def plot_decorator(func):
-        def wrapper(self, analysis_case, sections=None, ax=None, fig=None, axis=[False, False], phi=None, psi=None, max_beam_len=None, assigned_colors=None, max_forces=None, axial=False, shear=False, moment=False, bending_stiffness=False, text_values=True, scale=0.1, showPlt=False):
+        def wrapper(self, analysis_case, ax=None, fig=None, axis=[False, False],  opt_results=None, max_forces=None, axial=False, shear=False, moment=False, bending_stiffness=False, text_values=True, scale=0.1, showPlt=False, pass_opt_results=False):
             if ax is None:
                 (fig, ax) = plt.subplots()
 
@@ -283,8 +248,8 @@ class PostProcessor2D:
             ax.get_yaxis().set_visible(axis[1])
 
             # get size of structure
-            if max_beam_len is not None:
-                xmax = max_beam_len
+            if opt_results is not None:
+                xmax = max(opt_results.L)
                 (xmin, _, ymin, ymax, _, _) = self.analysis.get_node_lims()
             else:
                 pass
@@ -338,26 +303,14 @@ class PostProcessor2D:
             # loop throgh each element to plot the forces
             i = 0
             for n, el in enumerate(self.analysis.elements):
-                # Assign color of the first segment from assigned_colors
-                # using for bending moment plot:
-                if assigned_colors is not None:
-                    assigned_color = self.get_color(n, phi, assigned_colors)
-                else:
-                    assigned_color = None
-
-                # Assign section to element, if sections are provided
-                if sections is not None:
-                    section = sections[n]
-                else:
-                    section = None
 
                 # For section plot, only plot vertical lines at start and beginning
                 # of each segment
-                startSegment = False
-                endSegment = False
+                startSegment = midSegment = endSegment = False
 
                 # Check if element is in segment i
-                if phi is not None:
+                if opt_results is not None:
+                    phi = opt_results.phi[:, :, opt_results.k]
                     if np.sum(phi[i, :]) > 0:
                         # find smallest index of non-zero value
                         i_start = np.min(np.nonzero(phi[i, :]))
@@ -365,29 +318,42 @@ class PostProcessor2D:
                         # find max. index of non-zero value
                         i_end = np.max(np.nonzero(phi[i, :]))
 
+                        # Mid point of the element
+                        midSegmentEven = True
+                        if (i_start + i_end) % 2 == 0:  # Check if the midpoint index is even
+                            midSegmentEven = True
+                        else:
+                            midSegmentEven = False
+                        i_mid = int((i_start + i_end) / 2)
+
                         # if element is at start / beginning of segment, plot
                         # vertical line
                         if n == i_start:
                             startSegment = True
+                        if n == i_mid:
+                            midSegment = True
                         if n == i_end:
                             i += 1
                             endSegment = True
 
+                if not pass_opt_results:
+                    opt_results = None
+
                 if axial:
                     el.plot_axial_force(
-                        ax=ax, fig=fig, analysis_case=analysis_case, scalef=scale_axial, n=self.n_subdiv, text_values=text_values, section=section)
+                        ax=ax, fig=fig, analysis_case=analysis_case, opt_results=opt_results, scalef=scale_axial, idx=n, n_subdiv=self.n_subdiv, text_values=text_values, section=section)
                 if shear:
                     el.plot_shear_force(
-                        ax=ax, fig=fig, analysis_case=analysis_case, scalef=scale_shear, n=self.n_subdiv, text_values=text_values, section=section)
+                        ax=ax, fig=fig, analysis_case=analysis_case, opt_results=opt_results, scalef=scale_shear, idx=n, n_subdiv=self.n_subdiv, text_values=text_values, section=section)
                 if moment:
                     el.plot_bending_moment(
-                        ax=ax, fig=fig, analysis_case=analysis_case, assigned_color=assigned_color, scalef=scale_moment, n=self.n_subdiv, text_values=text_values, section=section, startSegment=startSegment, endSegment=endSegment)
+                        ax=ax, fig=fig, analysis_case=analysis_case, opt_results=opt_results, scalef=scale_moment, idx=n, n_subdiv=self.n_subdiv, text_values=text_values, startSegment=startSegment, endSegment=endSegment, midSegment=midSegment, midSegmentEven=midSegmentEven)
                 if bending_stiffness:
                     el.plot_bending_stiffness(
-                        ax=ax, fig=fig, analysis_case=analysis_case, assigned_color=assigned_color, scalef=scale_bending_stiffness, n=self.n_subdiv, text_values=text_values, section=section, startSegment=startSegment, endSegment=endSegment)
+                        ax=ax, fig=fig, analysis_case=analysis_case, opt_results=opt_results, scalef=scale_bending_stiffness, idx=n, n_subdiv=self.n_subdiv, text_values=text_values, startSegment=startSegment, endSegment=endSegment, midSegment=midSegment, midSegmentEven=midSegmentEven)
 
             # plot the undeformed structure
-            ax, fig = self.plot_geom(analysis_case=analysis_case, phi=phi, max_beam_len=max_beam_len,
+            ax, fig = self.plot_geom(analysis_case=analysis_case, opt_results=opt_results,
                                      ax=ax, fig=fig, axis=axis, loads=False, showPlt=showPlt)
 
             return ax, fig
@@ -395,7 +361,7 @@ class PostProcessor2D:
         return wrapper
 
     @plot_decorator
-    def plot_frame_forces(self, analysis_case, ax=None, fig=None, axis=[False, False], phi=None, max_beam_len=None, max_forces=None, axial=False, shear=False, moment=False, text_values=True, scale=0.1, showPlt=False):
+    def plot_frame_forces(self, analysis_case, ax=None, fig=None, axis=[False, False], opt_results=None, max_forces=None, axial=False, shear=False, moment=False, text_values=True, scale=0.1, showPlt=False, pass_opt_results=False):
         """Method used to plot internal frame actions resulting from the analysis case.
 
         :param analysis_case: Analysis case
@@ -405,8 +371,8 @@ class PostProcessor2D:
         :param fig: Figure object on which to plot
         :type fig: :class:`matplotlib
         :param [bool, bool] axis: list with bools whether or not the [x / y] axis is plotted
-        :param phi: Element to section mapping matrix
-        :type phi: numpy.ndarray
+        :param opt_results: The results of the optimization. Defaults to None.
+        :type opt_results: :class:`~designforreuse.opt.results.Results`
         :param bool axial: Whether or not the axial force diagram is displayed
         :param bool shear: Whether or not the shear force diagram is displayed
         :param bool moment: Whether or not the bending moment diagram is displayed
@@ -419,7 +385,7 @@ class PostProcessor2D:
         pass
 
     @plot_decorator
-    def plot_frame_sections(self, analysis_case, sections, ax=None, fig=None, axis=[False, False], phi=None, max_beam_len=None, max_forces=None, axial=False, shear=False, moment=False, text_values=True, scale=0.1, showPlt=False):
+    def plot_frame_sections(self, analysis_case, ax=None, fig=None, axis=[False, False], opt_results=None, max_forces=None, axial=False, shear=False, moment=False, text_values=True, scale=0.1, showPlt=False, pass_opt_results=True):
         """Method used to plot frame sections resulting the element to section mapping.
 
         :param analysis_case: Analysis case
@@ -431,8 +397,8 @@ class PostProcessor2D:
         :param fig: Figure object on which to plot
         :type fig: :class:`matplotlib
         :param [bool, bool] axis: list with bools whether or not the [x / y] axis is plotted
-        :param phi: Element to section mapping matrix
-        :type phi: numpy.ndarray
+        :param opt_results: The results of the optimization. Defaults to None.
+        :type opt_results: :class:`~designforreuse.opt.results.Results`
         :param bool axial: Whether or not the axial force diagram is displayed
         :param bool shear: Whether or not the shear force diagram is displayed
         :param bool moment: Whether or not the bending moment diagram is displayed

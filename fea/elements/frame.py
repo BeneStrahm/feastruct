@@ -60,7 +60,7 @@ class FrameElement(FiniteElement):
 
         return (node_coords, dx, l0, c)
 
-    def get_sampling_points(self, n, analysis_case, bm=False, defl=False):
+    def get_sampling_points(self, n_subdiv, analysis_case, bm=False, defl=False):
         """Returns a list of sampling points along a 2D frame element given a minimum *n* points
         and an analysis case. The sampling points vary from 0 to 1.
 
@@ -83,12 +83,13 @@ class FrameElement(FiniteElement):
         """
 
         # generate initial list of stations
-        stations = np.linspace(0, 1, n)
+        stations = np.linspace(0, 1, n_subdiv)
 
         # find any points of zero shear force
         if bm:
             # get sfd
-            (xis, sfd) = self.get_sfd(n=n, analysis_case=analysis_case)
+            (xis, sfd) = self.get_sfd(
+                n_subdiv=n_subdiv, analysis_case=analysis_case)
 
             # loop through shear force diagram
             for i in range(len(xis) - 1):
@@ -161,7 +162,7 @@ class FrameElement(FiniteElement):
 
         return element_loads
 
-    def get_displacements(self, n, analysis_case):
+    def get_displacements(self, n_subdiv, analysis_case):
         """Placeholder for the get_displacements method.
 
         Returns a list of the local displacements, *(u, v, w, ru, rv, rw)*, along the element for
@@ -190,7 +191,7 @@ class FrameElement(FiniteElement):
 
         pass
 
-    def get_afd(self, n, analysis_case):
+    def get_afd(self, n_subdiv, analysis_case):
         """Placeholder for the get_afd method.
 
         Returns the axial force diagram within the element for a minimum of *n* stations for an
@@ -206,7 +207,7 @@ class FrameElement(FiniteElement):
 
         pass
 
-    def get_sfd(self, n, analysis_case):
+    def get_sfd(self, n_subdiv, analysis_case):
         """Placeholder for the get_sfd method.
 
         Returns the shear force diagram within the element for a minimum of *n* stations for an
@@ -222,7 +223,7 @@ class FrameElement(FiniteElement):
 
         pass
 
-    def get_bmd(self, n, analysis_case):
+    def get_bmd(self, n_subdiv, analysis_case):
         """Placeholder for the get_bmd method.
 
         Returns the bending moment diagram within the element for a minimum of *n* stations for
