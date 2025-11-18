@@ -87,7 +87,7 @@ class PostProcessor2D:
         for el in self.analysis.elements:
             if deformed:
                 el.plot_deformed_element(
-                    ax=ax, analysis_case=analysis_case, n=self.n_subdiv, def_scale=def_scale)
+                    ax=ax, analysis_case=analysis_case, n_subdiv=self.n_subdiv, def_scale=def_scale)
                 if undeformed:
                     el.plot_element(ax=ax, linestyle='--',
                                     linewidth=1, marker='')
@@ -444,7 +444,7 @@ class PostProcessor2D:
                 analysis_case=analysis_case, buckling_mode=buckling_mode)
 
             el.plot_deformed_element(
-                ax=ax, analysis_case=analysis_case, n=self.n_subdiv, def_scale=scale, u_el=v_el)
+                ax=ax, analysis_case=analysis_case, n_subdiv=self.n_subdiv, def_scale=scale, u_el=v_el)
 
         # plot the load factor (eigenvalue)
         ax.set_title("Load Factor for Mode {:d}: {:.4e}".format(
@@ -487,7 +487,7 @@ class PostProcessor2D:
                 analysis_case=analysis_case, frequency_mode=frequency_mode)
 
             el.plot_deformed_element(
-                ax=ax, analysis_case=analysis_case, n=self.n_subdiv, def_scale=scale, u_el=v_el)
+                ax=ax, analysis_case=analysis_case, n_subdiv=self.n_subdiv, def_scale=scale, u_el=v_el)
 
         # plot the frequency (eigenvalue)
         ax.set_title("Frequency for Mode {:d}: {:.4e} Hz".format(

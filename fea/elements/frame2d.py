@@ -51,7 +51,7 @@ class FrameElement2D(FrameElement):
         coords = self.get_node_coords()
 
         ax.plot(coords[:, 0], coords[:, 1], color='k', linestyle=linestyle,
-                linewidth=linewidth, marker=marker, markersize=2.5, markeredgecolor='grey', markerfacecolor='grey')
+                linewidth=linewidth, marker=marker, markersize=2.5, markeredgecolor='#999999', markerfacecolor='#999999')
 
     def plot_deformed_element(self, ax, analysis_case, n_subdiv, def_scale, u_el=None):
         """Plots a 2D frame element in its deformed configuration for the displacement vector
@@ -80,7 +80,7 @@ class FrameElement2D(FrameElement):
         # if a displacement vector is supplied
         else:
             # set stations
-            xis = np.linspace(0, 1, n)
+            xis = np.linspace(0, 1, n_subdiv)
 
             # rotate nodal displacements to local axis
             T = self.get_transformation_matrix()
@@ -88,20 +88,20 @@ class FrameElement2D(FrameElement):
             u_el[1, :] = np.matmul(T, u_el[1, :])
 
         # redefine number of stations
-        n = len(xis)
+        n_subdiv = len(xis)
 
         # compute frame geometric parameters
         (node_coords, _, _, c) = self.get_geometric_properties()
 
         # allocate displacement vectors
-        u_x = np.zeros(n)
-        u_y = np.zeros(n)
-        x = np.zeros(n)
-        y = np.zeros(n)
+        u_x = np.zeros(n_subdiv)
+        u_y = np.zeros(n_subdiv)
+        x = np.zeros(n_subdiv)
+        y = np.zeros(n_subdiv)
 
         # original location of frame station points
-        x0 = np.linspace(node_coords[0, 0], node_coords[1, 0], n)
-        y0 = np.linspace(node_coords[0, 1], node_coords[1, 1], n)
+        x0 = np.linspace(node_coords[0, 0], node_coords[1, 0], n_subdiv)
+        y0 = np.linspace(node_coords[0, 1], node_coords[1, 1], n_subdiv)
 
         # loop through stations on frame
         for (i, xi) in enumerate(xis):
@@ -124,12 +124,13 @@ class FrameElement2D(FrameElement):
             y[i] = u_y[i] + y0[i]
 
         # plot frame elements
-        for i in range(n - 1):
-            ax.plot([x[i], x[i+1]], [y[i], y[i+1]], 'k-', linewidth=2)
+        for i in range(n_subdiv - 1):
+            ax.plot([x[i], x[i+1]], [y[i], y[i+1]],
+                    'k--', linewidth=.5, marker='')
 
-        # plot end markers
-        ax.plot(x[0], y[0], 'k.', markersize=3)
-        ax.plot(x[-1], y[-1], 'k.', markersize=3)
+        # # plot end markers
+        # ax.plot(x[0], y[0], 'k.', markersize=3)
+        # ax.plot(x[-1], y[-1], 'k.', markersize=3)
 
     def plot_axial_force(self, ax, fig, analysis_case, opt_results, scalef, idx, n_subdiv, linewidth=.5, text_values=False):
         """Plots the axial force diagram from a static analysis defined by case_id. N.B. this
@@ -376,6 +377,8 @@ class FrameElement2D(FrameElement):
                 if opt_results is None:
                     c = (1.0, 0, 0)
                     fc = (1.0, 0.5, 0.5)
+                    c = (0.4, 0.4, 0.4)
+                    fc = (0.7, 0.7, 0.7)
                     alpha = 0.05
 
                     # Edge lines of each part is removed, only the bottom line is remained
@@ -744,7 +747,7 @@ class Bar2D_2N(FrameElement2D):
 
         return f
 
-    def get_displacements(self, n, analysis_case):
+    def get_displacements(self, n_subdiv, analysis_case):
         """Returns a list of the local displacements, *(u, v, w, ru, rv, rw)*, along the element
         for the analysis case and a minimum of *n* subdivisions. A list of the stations, *xi*, is
         also included. Station locations, *xis*, vary from 0 to 1.
@@ -803,7 +806,7 @@ class Bar2D_2N(FrameElement2D):
             [-c[1], c[0]]
         ])
 
-    def get_afd(self, n, analysis_case):
+    def get_afd(self, n_subdiv, analysis_case):
         """Returns the axial force diagram within the element for *n* stations for an
         analysis_case. Station locations, *xis*, vary from 0 to 1.
 
@@ -821,7 +824,7 @@ class Bar2D_2N(FrameElement2D):
         N2 = f[1]
 
         # allocate the axial force diagram
-        afd = np.zeros(n)
+        afd = np.zeros(n_subdiv)
 
         # generate list of stations
         stations = self.get_sampling_points(
@@ -837,7 +840,7 @@ class Bar2D_2N(FrameElement2D):
 
         return (stations, afd)
 
-    def get_sfd(self, n, analysis_case):
+    def get_sfd(self, n_subdiv, analysis_case):
         """Returns the shear force diagram within the element for *n* stations for an
         analysis_case. Station locations, *xis*, vary from 0 to 1.
 
@@ -850,9 +853,9 @@ class Bar2D_2N(FrameElement2D):
         """
 
         # no shear force in this element
-        return (np.linspace(0, 1, n), np.zeros(n))
+        return (np.linspace(0, 1, n_subdiv), np.zeros(n_subdiv))
 
-    def get_bmd(self, n, analysis_case):
+    def get_bmd(self, n_subdiv, analysis_case):
         """Returns the bending moment diagram within the element for *n* stations for an
         analysis_case. Station locations, *xis*, vary from 0 to 1.
 
@@ -865,7 +868,7 @@ class Bar2D_2N(FrameElement2D):
         """
 
         # no bending moment in this element
-        return (np.linspace(0, 1, n), np.zeros(n))
+        return (np.linspace(0, 1, n_subdiv), np.zeros(n_subdiv))
 
     def calculate_local_displacement(self, xi, u_el):
         """Calculates the local displacement of the element at position *xi* given the displacement
@@ -1117,7 +1120,7 @@ class EulerBernoulli2D_2N(FrameElement2D):
 
         return f
 
-    def get_displacements(self, n, analysis_case):
+    def get_displacements(self, n_subdiv, analysis_case):
         """Returns a list of the local displacements, *(u, v, w, ru, rv, rw)*, along the element
         for the analysis case and a minimum of *n* subdivisions. A list of the stations, *xi*, is
         also included. Station locations, *xis*, vary from 0 to 1.
