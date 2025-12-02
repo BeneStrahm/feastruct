@@ -329,11 +329,11 @@ class FrameElement2D(FrameElement):
         for M_rc in ['M_ru', 'M_ro']:
             # Get element properties
             if opt_results is not None:
-                assigned_color = opt_results.getElementColor(
+                assigned_color = opt_results.get_element_color(
                     idx, opt_results.k)
-                c_idx = opt_results.getElementClusterProperty(
+                c_idx = opt_results.get_element_cluster_property(
                     idx, opt_results.k, 'c_idx')
-                M_r = opt_results.getElementSectionProperty(
+                M_r = opt_results.get_element_section_property(
                     idx, opt_results.k, M_rc)
             else:
                 assigned_color = None
@@ -481,9 +481,9 @@ class FrameElement2D(FrameElement):
         """
         # Get element properties
         if opt_results is not None:
-            assigned_color = opt_results.getElementColor(
+            assigned_color = opt_results.get_element_color(
                 idx, opt_results.k)
-            c_idx = opt_results.getElementClusterProperty(
+            c_idx = opt_results.get_element_cluster_property(
                 idx, opt_results.k, 'c_idx')
         else:
             assigned_color = None
