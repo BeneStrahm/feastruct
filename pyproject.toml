@@ -20,9 +20,7 @@ classifiers = [
 
 [tool.setuptools]
 include-package-data = true
-packages = ["feastruct"]
 
-[tool.setuptools.package-data]
-feastruct = [
-    "*.json", "*.csv", "*.txt", "*.md", "*.yml", "*.yaml", "*.ini", "*.cfg", "*.npz", "*.npy", "*.mplstyle",
-]
+[tool.setuptools.packages.find]
+where = ["."]
+exclude = ["examples*", "tests*"]

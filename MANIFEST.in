@@ -3,8 +3,5 @@ include README.md
 include LICENSE
 include pyproject.toml
 
-# Package data (common non-code assets)
-recursive-include pyLEK *.json *.csv *.txt *.md *.yml *.yaml *.ini *.cfg *.npz *.npy *.mplstyle *.md *.mustache
-
 # Exclusions
 global-exclude *.py[cod] __pycache__ *.so *.dylib .DS_Store Thumbs.db
