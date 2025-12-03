@@ -9,7 +9,7 @@ description = "FE-Analysis for Python"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { file = "LICENSE" }
-urls = { Homepage = "https://github.com/BeneStrahm/feastruct", Source = "https://github.com/BeneStrahm/feastruct", Forked From = "https://github.com/robbievanleeuwen/feastruct"}
+urls = { Homepage = "https://github.com/BeneStrahm/feastruct", Source = "https://github.com/BeneStrahm/feastruct", "Forked From" = "https://github.com/robbievanleeuwen/feastruct" }
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
